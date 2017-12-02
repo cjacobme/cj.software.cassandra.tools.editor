@@ -25,6 +25,7 @@
         <menus>
           <Menu mnemonicParsing="false" text="Connections">
             <items>
+                  <MenuItem mnemonicParsing="false" onAction="#handleNewConnection" text="New..." />
               <MenuItem mnemonicParsing="false" onAction="#handleExit" text="Exit" />
             </items>
                <accelerator>

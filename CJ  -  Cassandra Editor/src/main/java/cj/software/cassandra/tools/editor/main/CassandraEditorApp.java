@@ -44,4 +44,8 @@ public class CassandraEditorApp
 		this.primaryStage.show();
 	}
 
+	public Stage getPrimaryStage()
+	{
+		return this.primaryStage;
+	}
 }
