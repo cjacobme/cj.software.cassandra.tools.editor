@@ -10,7 +10,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Modality;
@@ -23,6 +22,8 @@ public class CassandraEditorAppController
 	@FXML
 	private TreeView<String> connectionsTree;
 
+	private RootItem rootItem;
+
 	void setMain(CassandraEditorApp pMain)
 	{
 		this.main = pMain;
@@ -31,7 +32,8 @@ public class CassandraEditorAppController
 	@FXML
 	private void initialize()
 	{
-		this.connectionsTree.setRoot(new TreeItem<String>("Connections"));
+		this.rootItem = new RootItem();
+		this.connectionsTree.setRoot(this.rootItem);
 	}
 
 	@FXML
@@ -70,7 +72,8 @@ public class CassandraEditorAppController
 			if (lController.isOkClicked())
 			{
 				Cluster lCluster = lController.getCluster();
-				// TODO insert cluster into tree if it is not already there
+				ClusterTreeItem lClusterTreeItem = new ClusterTreeItem(lCluster);
+				this.rootItem.getChildren().add(lClusterTreeItem);
 			}
 
 		}

@@ -11,16 +11,15 @@ public class ThrowableStackTraceAlertFactory
 {
 	public static Alert createAlert(Throwable pThrowable)
 	{
-		Throwable lRootCause = toRootOfProblem(pThrowable);
 		Alert lResult = new Alert(AlertType.ERROR);
 		lResult.setTitle("Connection failed");
 		lResult.setHeaderText("Exception in Connection attempt");
 		lResult.setContentText(
 				"You caught a "
-						+ lRootCause.getClass().getSimpleName()
+						+ pThrowable.getClass().getSimpleName()
 						+ ": "
-						+ lRootCause.getMessage());
-		String lStackTrace = toStackTrace(lRootCause);
+						+ pThrowable.getMessage());
+		String lStackTrace = toStackTrace(pThrowable);
 		Label lLabel = new Label("The exception stacktrace was:");
 
 		TextArea lTextArea = new TextArea(lStackTrace);
@@ -45,23 +44,36 @@ public class ThrowableStackTraceAlertFactory
 	private static String toStackTrace(Throwable pThrowable)
 	{
 		StringBuilder lSB = new StringBuilder();
-		StackTraceElement[] lStackTrace = pThrowable.getStackTrace();
-		String lIntro = "";
-		for (StackTraceElement bElem : lStackTrace)
+
+		Throwable lThrowable = pThrowable;
+		lSB = toStackTrace(lSB, lThrowable, "");
+
+		lThrowable = lThrowable.getCause();
+		while (lThrowable != null)
 		{
-			lSB.append(lIntro).append(bElem.toString()).append("\r\n");
-			lIntro = "\tat ";
+			lSB = toStackTrace(lSB, lThrowable, "caused by ");
+			lThrowable = lThrowable.getCause();
 		}
+
 		return lSB.toString();
 	}
 
-	private static Throwable toRootOfProblem(Throwable pThrowable)
+	private static StringBuilder toStackTrace(
+			StringBuilder pSource,
+			Throwable pThrowable,
+			String pIntro)
 	{
-		Throwable lResult = pThrowable;
-		while (lResult.getCause() != null)
+		StackTraceElement[] lStackTrace = pThrowable.getStackTrace();
+		pSource
+				.append(pIntro)
+				.append(pThrowable.getClass().getName())
+				.append(": ")
+				.append(pThrowable.getMessage())
+				.append("\r\n");
+		for (StackTraceElement bElem : lStackTrace)
 		{
-			lResult = lResult.getCause();
+			pSource.append("\tat ").append(bElem.toString()).append("\r\n");
 		}
-		return lResult;
+		return pSource;
 	}
 }
