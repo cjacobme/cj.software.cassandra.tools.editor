@@ -6,6 +6,7 @@ import cj.software.cassandra.tools.editor.modell.Connection;
 import cj.software.javafx.ThrowableStackTraceAlertFactory;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TreeItem;
 
@@ -31,8 +32,26 @@ public class ConnectionTreeItem
 				{
 					showCluster();
 				}
+				else
+				{
+					closeCluster();
+				}
 			}
 		});
+	}
+
+	private void closeCluster()
+	{
+		ObservableList<TreeItem<String>> lChildren = this.getChildren();
+		for (TreeItem<String> bChild : lChildren)
+		{
+			ClusterTreeItem lClusterTreeItem = (ClusterTreeItem) bChild;
+			Cluster lCluster = lClusterTreeItem.getCluster();
+			if (lCluster != null)
+			{
+				lCluster.close();
+			}
+		}
 	}
 
 	private void showCluster()

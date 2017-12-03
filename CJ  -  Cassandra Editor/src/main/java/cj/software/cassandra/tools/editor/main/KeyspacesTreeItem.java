@@ -1,10 +1,9 @@
 package cj.software.cassandra.tools.editor.main;
 
-import java.util.Set;
+import java.util.List;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.KeyspaceMetadata;
 
 import cj.software.javafx.ThrowableStackTraceAlertFactory;
 import javafx.beans.value.ChangeListener;
@@ -12,12 +11,12 @@ import javafx.beans.value.ObservableValue;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TreeItem;
 
-public class HostsTreeItem
+public class KeyspacesTreeItem
 		extends TreeItem<String>
 {
-	public HostsTreeItem()
+	public KeyspacesTreeItem()
 	{
-		super("Hosts");
+		super("Keyspaces");
 		super.expandedProperty().addListener(new ChangeListener<Boolean>()
 		{
 
@@ -29,25 +28,30 @@ public class HostsTreeItem
 			{
 				if (pNewValue.booleanValue())
 				{
-					listHosts();
+					showKeysets();
 				}
 			}
 		});
 	}
 
-	private void listHosts()
+	@Override
+	public boolean isLeaf()
+	{
+		return false;
+	}
+
+	private void showKeysets()
 	{
 		try
 		{
-			ClusterTreeItem lParent = (ClusterTreeItem) getParent();
-			Cluster lCluster = lParent.getCluster();
-			Metadata lMetadata = lCluster.getMetadata();
-			Set<Host> lAllHosts = lMetadata.getAllHosts();
-			getChildren().clear();
-			for (Host bHost : lAllHosts)
+			ClusterTreeItem lClusterTreeItem = (ClusterTreeItem) super.getParent();
+			Cluster lCluster = lClusterTreeItem.getCluster();
+			super.getChildren().clear();
+			List<KeyspaceMetadata> lKeyspaces = lCluster.getMetadata().getKeyspaces();
+			for (KeyspaceMetadata bKeyspace : lKeyspaces)
 			{
-				HostTreeItem lHostTreeItem = new HostTreeItem(bHost);
-				getChildren().add(lHostTreeItem);
+				KeyspaceMetaTreeItem lTreeItem = new KeyspaceMetaTreeItem(bKeyspace);
+				super.getChildren().add(lTreeItem);
 			}
 		}
 		catch (Throwable pThrowable)
@@ -57,11 +61,4 @@ public class HostsTreeItem
 			lAlert.showAndWait();
 		}
 	}
-
-	@Override
-	public boolean isLeaf()
-	{
-		return false;
-	}
-
 }
