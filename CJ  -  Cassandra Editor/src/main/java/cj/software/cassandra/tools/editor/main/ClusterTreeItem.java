@@ -13,6 +13,9 @@ public class ClusterTreeItem
 	{
 		super(pCluster.getClusterName());
 		this.cluster = pCluster;
+
+		super.getChildren().add(new HostsTreeItem());
+		super.getChildren().add(new TablesTreeItem());
 	}
 
 	public Cluster getCluster()
