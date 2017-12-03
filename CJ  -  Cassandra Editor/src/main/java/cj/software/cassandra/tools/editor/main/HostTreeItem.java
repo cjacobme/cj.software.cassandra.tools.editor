@@ -11,7 +11,11 @@ public class HostTreeItem
 
 	public HostTreeItem(Host pHost)
 	{
-		super(pHost.getAddress().getHostAddress());
+		super(
+				String.format(
+						"%s (%s)",
+						pHost.getAddress().getHostName(),
+						pHost.getAddress().getHostAddress()));
 		this.host = pHost;
 	}
 
