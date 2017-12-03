@@ -2,9 +2,8 @@ package cj.software.cassandra.tools.editor.main;
 
 import java.net.URL;
 
-import com.datastax.driver.core.Cluster;
-
 import cj.software.cassandra.tools.editor.connection.ConnectionDialogController;
+import cj.software.cassandra.tools.editor.modell.Connection;
 import cj.software.javafx.ThrowableStackTraceAlertFactory;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -71,9 +70,9 @@ public class CassandraEditorAppController
 
 			if (lController.isOkClicked())
 			{
-				Cluster lCluster = lController.getCluster();
-				ClusterTreeItem lClusterTreeItem = new ClusterTreeItem(lCluster);
-				this.rootItem.getChildren().add(lClusterTreeItem);
+				Connection lConnection = lController.getConnection();
+				ConnectionTreeItem lConnectionTreeItem = new ConnectionTreeItem(lConnection);
+				this.rootItem.getChildren().add(lConnectionTreeItem);
 			}
 
 		}

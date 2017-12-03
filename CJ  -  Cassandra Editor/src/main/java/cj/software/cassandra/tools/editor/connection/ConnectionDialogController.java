@@ -2,6 +2,7 @@ package cj.software.cassandra.tools.editor.connection;
 
 import com.datastax.driver.core.Cluster;
 
+import cj.software.cassandra.tools.editor.modell.Connection;
 import cj.software.javafx.ThrowableStackTraceAlertFactory;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -14,6 +15,8 @@ public class ConnectionDialogController
 {
 	private Stage dialogStage;
 
+	private Connection connection;
+
 	@FXML
 	private TextField hostname;
 
@@ -24,8 +27,6 @@ public class ConnectionDialogController
 	private PasswordField password;
 
 	private boolean okClicked = false;
-
-	private Cluster cluster;
 
 	@FXML
 	private void handleTestBtn()
@@ -76,8 +77,8 @@ public class ConnectionDialogController
 			Cluster lCluster = Cluster.builder().addContactPoint(lHostname).build();
 			if (lCluster != null)
 			{
+				this.connection = new Connection(lHostname, null, null);
 				this.okClicked = true;
-				this.cluster = lCluster;
 				this.dialogStage.close();
 			}
 		}
@@ -93,8 +94,8 @@ public class ConnectionDialogController
 		return this.okClicked;
 	}
 
-	public Cluster getCluster()
+	public Connection getConnection()
 	{
-		return this.cluster;
+		return this.connection;
 	}
 }
