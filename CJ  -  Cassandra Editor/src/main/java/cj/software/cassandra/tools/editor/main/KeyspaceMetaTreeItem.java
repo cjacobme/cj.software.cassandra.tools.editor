@@ -13,11 +13,11 @@ public class KeyspaceMetaTreeItem
 	{
 		super(pMetadata.getName());
 		this.keyspaceMetadata = pMetadata;
+		this.getChildren().add(new TablesTreeItem(pMetadata));
 	}
 
 	public KeyspaceMetadata getKeyspaceMetadata()
 	{
 		return this.keyspaceMetadata;
 	}
-
 }
