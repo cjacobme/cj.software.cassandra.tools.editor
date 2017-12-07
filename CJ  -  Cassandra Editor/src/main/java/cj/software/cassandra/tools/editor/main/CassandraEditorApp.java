@@ -3,6 +3,7 @@ package cj.software.cassandra.tools.editor.main;
 import java.net.URL;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
@@ -25,6 +26,11 @@ public class CassandraEditorApp
 	{
 		this.primaryStage = pPrimaryStage;
 		this.primaryStage.setTitle("Cassandra Editor - by CJ");
+		this.primaryStage.setOnCloseRequest(e ->
+		{
+			Platform.exit();
+			System.exit(0);
+		});
 
 		String lFxmlFilename = "CassandraEditorApp.fxml";
 		URL lURL = this.getClass().getResource(lFxmlFilename);
