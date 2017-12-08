@@ -2,6 +2,9 @@ package cj.software.cassandra.tools.editor.modell;
 
 import java.io.Serializable;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 public class Connection
 		implements
 		Serializable
@@ -34,5 +37,30 @@ public class Connection
 	public String getPassword()
 	{
 		return this.password;
+	}
+
+	@Override
+	public int hashCode()
+	{
+		HashCodeBuilder lBuilder = new HashCodeBuilder().append(this.hostname);
+		int lResult = lBuilder.build();
+		return lResult;
+	}
+
+	@Override
+	public boolean equals(Object pOther)
+	{
+		boolean lResult;
+		if (pOther instanceof Connection)
+		{
+			Connection lOther = (Connection) pOther;
+			EqualsBuilder lBuilder = new EqualsBuilder().append(this.hostname, lOther.hostname);
+			lResult = lBuilder.build();
+		}
+		else
+		{
+			lResult = false;
+		}
+		return lResult;
 	}
 }
