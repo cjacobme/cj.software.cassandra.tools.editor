@@ -14,6 +14,12 @@ public class CassandraEditorApp
 {
 	private Pane rootPane;
 
+	public static String INITIAL_TITLE = "Cassandra Editor - by CJ";
+
+	public static String FMT_TITLE_HOST_CONNECTED = "Cassandra Editor - Host %s";
+
+	public static final String FMT_TITLE_HOST_KEYSPACE_CONNECTED = "Cassandra Editor - Host %s Keyspace %s";
+
 	private Stage primaryStage;
 
 	public static void main(String[] pArgs)
@@ -25,7 +31,7 @@ public class CassandraEditorApp
 	public void start(Stage pPrimaryStage) throws Exception
 	{
 		this.primaryStage = pPrimaryStage;
-		this.primaryStage.setTitle("Cassandra Editor - by CJ");
+		this.primaryStage.setTitle(INITIAL_TITLE);
 		this.primaryStage.setOnCloseRequest(e ->
 		{
 			Platform.exit();

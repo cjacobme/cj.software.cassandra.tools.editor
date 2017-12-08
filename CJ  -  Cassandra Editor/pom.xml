@@ -4,7 +4,7 @@
 
 	<groupId>cj.software.cassandra.tools</groupId>
 	<artifactId>cassandra-editor</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.2-SNAPSHOT</version>
 
 	<name>CJ  -  Cassandra Editor</name>
 	<description>an editor for Apache Cassandra based on JavaFX 8</description>

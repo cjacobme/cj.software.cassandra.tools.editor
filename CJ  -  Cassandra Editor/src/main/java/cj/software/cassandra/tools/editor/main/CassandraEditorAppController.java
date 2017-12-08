@@ -5,14 +5,14 @@ import java.net.URL;
 import cj.software.cassandra.tools.editor.connection.ConnectionDialogController;
 import cj.software.cassandra.tools.editor.modell.Connection;
 import cj.software.javafx.ThrowableStackTraceAlertFactory;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.Menu;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -21,10 +21,13 @@ public class CassandraEditorAppController
 {
 	private CassandraEditorApp main;
 
-	@FXML
-	private TreeView<String> connectionsTree;
+	private ObjectProperty<Connection> connectionProperty = new SimpleObjectProperty<>();
 
-	private RootItem rootItem;
+	@FXML
+	private SeparatorMenuItem connectionBeforeRecentList;
+
+	@FXML
+	private Menu keyspacesMenu;
 
 	void setMain(CassandraEditorApp pMain)
 	{
@@ -34,27 +37,28 @@ public class CassandraEditorAppController
 	@FXML
 	private void initialize()
 	{
-		this.rootItem = new RootItem();
-		this.connectionsTree.setRoot(this.rootItem);
-		this.connectionsTree.getSelectionModel().selectedItemProperty().addListener(
-				new ChangeListener<TreeItem<String>>()
-				{
+	}
 
-					@Override
-					public void changed(
-							ObservableValue<? extends TreeItem<String>> pObservable,
-							TreeItem<String> pOldValue,
-							TreeItem<String> pNewValue)
-					{
-						String lOldDesc = (pOldValue != null
-								? pOldValue.getClass().getSimpleName()
-								: "<null>");
-						String lNewDesc = (pNewValue != null
-								? pNewValue.getClass().getSimpleName()
-								: "<null>");
-						System.out.println("change " + lOldDesc + " to " + lNewDesc);
-					}
-				});
+	public Connection getConnection()
+	{
+		return this.connectionProperty.get();
+	}
+
+	public void setConnection(Connection pConnection)
+	{
+		this.connectionProperty.set(pConnection);
+		this.keyspacesMenu.setDisable(pConnection == null);
+		String lTitle = (pConnection != null
+				? String.format(
+						CassandraEditorApp.FMT_TITLE_HOST_CONNECTED,
+						pConnection.getHostname())
+				: CassandraEditorApp.INITIAL_TITLE);
+		this.main.getPrimaryStage().setTitle(lTitle);
+	}
+
+	public ObjectProperty<Connection> connectionProperty()
+	{
+		return this.connectionProperty;
 	}
 
 	@FXML
@@ -64,7 +68,7 @@ public class CassandraEditorAppController
 	}
 
 	@FXML
-	private void handleNewConnection()
+	private void handleConnectToHost()
 	{
 		try
 		{
@@ -93,8 +97,7 @@ public class CassandraEditorAppController
 			if (lController.isOkClicked())
 			{
 				Connection lConnection = lController.getConnection();
-				ConnectionTreeItem lConnectionTreeItem = new ConnectionTreeItem(lConnection);
-				this.rootItem.getChildren().add(lConnectionTreeItem);
+				this.setConnection(lConnection);
 			}
 
 		}
