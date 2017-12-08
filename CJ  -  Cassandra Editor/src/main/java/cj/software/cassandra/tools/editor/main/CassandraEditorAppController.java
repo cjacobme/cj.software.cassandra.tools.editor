@@ -5,10 +5,13 @@ import java.net.URL;
 import cj.software.cassandra.tools.editor.connection.ConnectionDialogController;
 import cj.software.cassandra.tools.editor.modell.Connection;
 import cj.software.javafx.ThrowableStackTraceAlertFactory;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Modality;
@@ -33,6 +36,25 @@ public class CassandraEditorAppController
 	{
 		this.rootItem = new RootItem();
 		this.connectionsTree.setRoot(this.rootItem);
+		this.connectionsTree.getSelectionModel().selectedItemProperty().addListener(
+				new ChangeListener<TreeItem<String>>()
+				{
+
+					@Override
+					public void changed(
+							ObservableValue<? extends TreeItem<String>> pObservable,
+							TreeItem<String> pOldValue,
+							TreeItem<String> pNewValue)
+					{
+						String lOldDesc = (pOldValue != null
+								? pOldValue.getClass().getSimpleName()
+								: "<null>");
+						String lNewDesc = (pNewValue != null
+								? pNewValue.getClass().getSimpleName()
+								: "<null>");
+						System.out.println("change " + lOldDesc + " to " + lNewDesc);
+					}
+				});
 	}
 
 	@FXML
