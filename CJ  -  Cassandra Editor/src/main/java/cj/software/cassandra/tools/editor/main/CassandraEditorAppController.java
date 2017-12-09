@@ -1,15 +1,20 @@
 package cj.software.cassandra.tools.editor.main;
 
 import java.net.URL;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.prefs.BackingStoreException;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ExecutionInfo;
+import com.datastax.driver.core.ColumnDefinitions;
+import com.datastax.driver.core.ColumnDefinitions.Definition;
+import com.datastax.driver.core.DataType.Name;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
+import com.datastax.driver.extras.codecs.jdk8.InstantCodec;
 
 import cj.software.cassandra.tools.editor.connection.ConnectionDialogController;
 import cj.software.cassandra.tools.editor.connection.KeyspacesSelectDialogController;
@@ -17,7 +22,10 @@ import cj.software.cassandra.tools.editor.modell.Connection;
 import cj.software.cassandra.tools.editor.storage.RecentConnectionsRepository;
 import cj.software.javafx.ThrowableStackTraceAlertFactory;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -30,11 +38,15 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableColumn.CellDataFeatures;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 
 public class CassandraEditorAppController
 {
@@ -62,6 +74,9 @@ public class CassandraEditorAppController
 
 	@FXML
 	private Button executeCql;
+
+	@FXML
+	private TableView<Object> results;
 
 	void setMain(CassandraEditorApp pMain)
 	{
@@ -204,6 +219,10 @@ public class CassandraEditorAppController
 	public void setCluster(Cluster pCluster)
 	{
 		this.clusterProperty.set(pCluster);
+		if (pCluster != null)
+		{
+			pCluster.getConfiguration().getCodecRegistry().register(InstantCodec.instance);
+		}
 	}
 
 	public Cluster getCluster()
@@ -343,6 +362,26 @@ public class CassandraEditorAppController
 		this.main.getPrimaryStage().setTitle(lTitle);
 	}
 
+	private class MyCellValueFactory
+			implements
+			Callback<TableColumn.CellDataFeatures<Object, String>, ObservableValue<String>>
+	{
+
+		@Override
+		public ObservableValue<String> call(CellDataFeatures<Object, String> pParam)
+		{
+			@SuppressWarnings("unchecked")
+			List<String> lRow = (List<String>) pParam.getValue();
+			TableColumn<Object, String> lTableColumn = pParam.getTableColumn();
+			TableView<Object> lTableView = pParam.getTableView();
+			int lIndex = lTableView.getColumns().indexOf(lTableColumn);
+			String lValue = lRow.get(lIndex);
+			ObservableValue<String> lResult = new ReadOnlyStringWrapper(lValue);
+			return lResult;
+		}
+
+	}
+
 	@FXML
 	private void executeCql()
 	{
@@ -352,8 +391,29 @@ public class CassandraEditorAppController
 			if (lContent.length() > 0)
 			{
 				ResultSet lRS = this.getSession().execute(lContent);
-				ExecutionInfo lExecInfo = lRS.getExecutionInfo();
-				Statement lStatement = lExecInfo.getStatement();
+				ColumnDefinitions lColumnDefinitions = lRS.getColumnDefinitions();
+				this.results.getColumns().clear();
+				this.results.getItems().clear();
+				List<Definition> lDefinitions = lColumnDefinitions.asList();
+				int lNumDefinitions = lDefinitions.size();
+				for (int bDefinition = 0; bDefinition < lNumDefinitions; bDefinition++)
+				{
+					Definition lDefinition = lDefinitions.get(bDefinition);
+					TableColumn<Object, String> lTableColumn = new TableColumn<>();
+					lTableColumn.setText(lDefinition.getName());
+					lTableColumn.setCellValueFactory(new MyCellValueFactory());
+					this.results.getColumns().add(lTableColumn);
+				}
+				lRS.forEach(pRow ->
+				{
+					List<String> lRow = new ArrayList<>(lColumnDefinitions.size());
+					for (int bCol = 0; bCol < lColumnDefinitions.size(); bCol++)
+					{
+						String lEntry = this.readValue(pRow, bCol, lDefinitions.get(bCol));
+						lRow.add(lEntry);
+					}
+					this.results.getItems().add(FXCollections.observableArrayList(lRow));
+				});
 			}
 			else
 			{
@@ -370,5 +430,29 @@ public class CassandraEditorAppController
 			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
 			lAlert.showAndWait();
 		}
+	}
+
+	private String readValue(Row pRow, int pIndex, Definition pDefinition)
+	{
+		Name lName = pDefinition.getType().getName();
+		String lResult;
+		switch (lName)
+		{
+		case DOUBLE:
+			double lDoubleValue = pRow.getDouble(pIndex);
+			lResult = String.valueOf(lDoubleValue);
+			break;
+		case TIMESTAMP:
+			Instant lInstant = pRow.get(pIndex, Instant.class);
+			lResult = lInstant.toString();
+			break;
+		case VARCHAR:
+		case TEXT:
+			lResult = pRow.getString(pIndex);
+			break;
+		default:
+			throw new UnsupportedOperationException("not yet implemented: " + lName);
+		}
+		return lResult;
 	}
 }
