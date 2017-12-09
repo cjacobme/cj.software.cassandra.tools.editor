@@ -457,9 +457,11 @@ public class CassandraEditorAppController
 		{
 		case DOUBLE:
 			lResult = new TableColumn<Object, Double>();
+			lResult.setStyle("-fx-alignment: CENTER-RIGHT;-fx-font-family: \"Courier New\";");
 			break;
 		case TIMESTAMP:
 			lResult = new TableColumn<Object, Instant>();
+			lResult.setStyle("-fx-font-family: \"Courier New\";");
 			break;
 		case VARCHAR:
 		case TEXT:
