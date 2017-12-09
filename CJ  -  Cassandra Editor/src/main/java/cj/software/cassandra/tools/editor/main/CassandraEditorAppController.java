@@ -49,6 +49,7 @@ public class CassandraEditorAppController
 		try
 		{
 			this.insertRecents();
+			this.keyspacesMenu.disableProperty().bind(this.connectionProperty.isNull());
 		}
 		catch (Throwable pThrowable)
 		{
@@ -96,7 +97,6 @@ public class CassandraEditorAppController
 	public void setConnection(Connection pConnection) throws BackingStoreException
 	{
 		this.connectionProperty.set(pConnection);
-		this.keyspacesMenu.setDisable(pConnection == null);
 		String lTitle = (pConnection != null
 				? String.format(
 						CassandraEditorApp.FMT_TITLE_HOST_CONNECTED,
