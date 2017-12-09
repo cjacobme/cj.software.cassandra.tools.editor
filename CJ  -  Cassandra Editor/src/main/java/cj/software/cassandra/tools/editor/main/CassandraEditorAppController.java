@@ -5,8 +5,11 @@ import java.util.List;
 import java.util.prefs.BackingStoreException;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ExecutionInfo;
 import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
 
 import cj.software.cassandra.tools.editor.connection.ConnectionDialogController;
 import cj.software.cassandra.tools.editor.connection.KeyspacesSelectDialogController;
@@ -22,9 +25,12 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
@@ -36,11 +42,11 @@ public class CassandraEditorAppController
 
 	private ObjectProperty<Connection> connectionProperty = new SimpleObjectProperty<>();
 
-	private Cluster cluster;
+	private ObjectProperty<Cluster> clusterProperty = new SimpleObjectProperty<>();
 
 	private RecentConnectionsRepository recentConnectionsRepository = new RecentConnectionsRepository();
 
-	private Session session;
+	private ObjectProperty<Session> sessionProperty = new SimpleObjectProperty<>();
 
 	@FXML
 	private SeparatorMenuItem connectionBeforeRecentList;
@@ -50,6 +56,12 @@ public class CassandraEditorAppController
 
 	@FXML
 	private Menu keyspacesMenu;
+
+	@FXML
+	private TextArea command;
+
+	@FXML
+	private Button executeCql;
 
 	void setMain(CassandraEditorApp pMain)
 	{
@@ -63,6 +75,10 @@ public class CassandraEditorAppController
 		{
 			this.insertRecents();
 			this.keyspacesMenu.disableProperty().bind(this.connectionProperty.isNull());
+			this.command.disableProperty().bind(this.sessionProperty.isNull());
+			this.command.editableProperty().bind(this.sessionProperty.isNotNull());
+			this.executeCql.disableProperty().bind(
+					this.sessionProperty.isNull().or(this.command.textProperty().isEmpty()));
 		}
 		catch (Throwable pThrowable)
 		{
@@ -162,17 +178,20 @@ public class CassandraEditorAppController
 			this.recentConnectionsRepository.save(pConnection);
 		}
 		this.main.getPrimaryStage().setTitle(lTitle);
-		if (this.session != null && !this.session.isClosed())
+		Session lSession = this.getSession();
+		if (lSession != null && !lSession.isClosed())
 		{
-			this.session.close();
+			lSession.close();
 		}
-		if (this.cluster != null && !this.cluster.isClosed())
+		Cluster lCluster = this.getCluster();
+		if (lCluster != null && !lCluster.isClosed())
 		{
-			this.cluster.close();
+			lCluster.close();
 		}
 		if (pConnection != null)
 		{
-			this.cluster = Cluster.builder().addContactPoint(pConnection.getHostname()).build();
+			lCluster = Cluster.builder().addContactPoint(pConnection.getHostname()).build();
+			this.setCluster(lCluster);
 			this.setRecentKeyspaces(pConnection);
 		}
 	}
@@ -180,6 +199,36 @@ public class CassandraEditorAppController
 	public ObjectProperty<Connection> connectionProperty()
 	{
 		return this.connectionProperty;
+	}
+
+	public void setCluster(Cluster pCluster)
+	{
+		this.clusterProperty.set(pCluster);
+	}
+
+	public Cluster getCluster()
+	{
+		return this.clusterProperty.get();
+	}
+
+	public ObjectProperty<Cluster> clusterProperty()
+	{
+		return this.clusterProperty;
+	}
+
+	public void setSession(Session pSession)
+	{
+		this.sessionProperty.set(pSession);
+	}
+
+	public Session getSession()
+	{
+		return this.sessionProperty.get();
+	}
+
+	public ObjectProperty<Session> sessionProperty()
+	{
+		return this.sessionProperty;
 	}
 
 	@FXML
@@ -253,7 +302,7 @@ public class CassandraEditorAppController
 
 			KeyspacesSelectDialogController lController = lLoader.getController();
 			lController.setDialogStage(lDialogStage);
-			lController.setCluster(this.cluster);
+			lController.setCluster(this.getCluster());
 
 			lDialogStage.showAndWait();
 
@@ -279,16 +328,47 @@ public class CassandraEditorAppController
 		this.recentConnectionsRepository.save(lConnection);
 		this.setRecentKeyspaces(lConnection);
 
-		if (this.session != null && !this.session.isClosed())
+		Session lCurrentSession = this.getSession();
+		if (lCurrentSession != null && !lCurrentSession.isClosed())
 		{
-			this.session.close();
+			lCurrentSession.close();
 		}
-		this.session = this.cluster.connect(pKeyspaceName);
+		lCurrentSession = this.getCluster().connect(pKeyspaceName);
+		this.setSession(lCurrentSession);
 
 		String lTitle = String.format(
 				CassandraEditorApp.FMT_TITLE_HOST_KEYSPACE_CONNECTED,
 				lConnection.getHostname(),
 				pKeyspaceName);
 		this.main.getPrimaryStage().setTitle(lTitle);
+	}
+
+	@FXML
+	private void executeCql()
+	{
+		try
+		{
+			String lContent = this.command.getText().trim();
+			if (lContent.length() > 0)
+			{
+				ResultSet lRS = this.getSession().execute(lContent);
+				ExecutionInfo lExecInfo = lRS.getExecutionInfo();
+				Statement lStatement = lExecInfo.getStatement();
+			}
+			else
+			{
+				Alert lAlert = new Alert(AlertType.WARNING);
+				lAlert.setTitle("No command entered");
+				lAlert.setContentText("Please enter a command");
+				lAlert.showAndWait();
+			}
+
+		}
+		catch (Throwable pThrowable)
+		{
+			pThrowable.printStackTrace(System.err);
+			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
+			lAlert.showAndWait();
+		}
 	}
 }
