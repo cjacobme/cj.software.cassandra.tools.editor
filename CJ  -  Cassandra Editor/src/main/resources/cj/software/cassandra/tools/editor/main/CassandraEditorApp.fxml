@@ -29,6 +29,7 @@
             <Menu fx:id="keyspacesMenu" disable="true" mnemonicParsing="false" text="Keyspaces">
               <items>
                 <MenuItem mnemonicParsing="false" onAction="#handleSelectKeyspace" text="Select..." />
+                  <SeparatorMenuItem fx:id="beforeRecentKeyspaces" mnemonicParsing="false" />
               </items>
             </Menu>
           <Menu mnemonicParsing="false" text="Help">

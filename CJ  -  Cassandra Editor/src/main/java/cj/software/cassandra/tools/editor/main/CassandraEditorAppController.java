@@ -46,6 +46,9 @@ public class CassandraEditorAppController
 	private SeparatorMenuItem connectionBeforeRecentList;
 
 	@FXML
+	private SeparatorMenuItem beforeRecentKeyspaces;
+
+	@FXML
 	private Menu keyspacesMenu;
 
 	void setMain(CassandraEditorApp pMain)
@@ -90,12 +93,54 @@ public class CassandraEditorAppController
 					}
 					catch (Throwable pThrowable)
 					{
+						pThrowable.printStackTrace(System.err);
 						Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
 						lAlert.showAndWait();
 					}
 				}
 			});
 			lItems.add(lInsertPosition, lNewItem);
+			lInsertPosition++;
+		}
+	}
+
+	private void clearRecentKeyspaces()
+	{
+		Menu lParentMenu = this.beforeRecentKeyspaces.getParentMenu();
+		ObservableList<MenuItem> lItems = lParentMenu.getItems();
+		int lSeparatorIndex = lItems.indexOf(this.beforeRecentKeyspaces);
+		int lNumItems = lItems.size();
+		for (int bI = lNumItems - 1; bI > lSeparatorIndex; bI--)
+		{
+			lItems.remove(bI);
+		}
+	}
+
+	private void setRecentKeyspaces(Connection pConnection)
+	{
+		this.clearRecentKeyspaces();
+		Menu lParentMenu = this.beforeRecentKeyspaces.getParentMenu();
+		ObservableList<MenuItem> lItems = lParentMenu.getItems();
+		int lInsertPosition = lItems.indexOf(this.beforeRecentKeyspaces) + 1;
+		List<String> lKeyspaces = pConnection.getKeyspaces();
+		for (String bKeyspace : lKeyspaces)
+		{
+			MenuItem lNewItem = new MenuItem(bKeyspace);
+			lNewItem.setOnAction(a ->
+			{
+				try
+				{
+					openSession(bKeyspace);
+				}
+				catch (Throwable pThrowable)
+				{
+					pThrowable.printStackTrace(System.err);
+					Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
+					lAlert.showAndWait();
+				}
+			});
+			lItems.add(lInsertPosition, lNewItem);
+			lInsertPosition++;
 		}
 	}
 
@@ -128,6 +173,7 @@ public class CassandraEditorAppController
 		if (pConnection != null)
 		{
 			this.cluster = Cluster.builder().addContactPoint(pConnection.getHostname()).build();
+			this.setRecentKeyspaces(pConnection);
 		}
 	}
 
@@ -231,6 +277,12 @@ public class CassandraEditorAppController
 		Connection lConnection = this.getConnection();
 		lConnection.addKeyspace(pKeyspaceName);
 		this.recentConnectionsRepository.save(lConnection);
+		this.setRecentKeyspaces(lConnection);
+
+		if (this.session != null && !this.session.isClosed())
+		{
+			this.session.close();
+		}
 		this.session = this.cluster.connect(pKeyspaceName);
 
 		String lTitle = String.format(
