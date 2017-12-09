@@ -46,6 +46,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
@@ -87,6 +88,23 @@ public class CassandraEditorAppController
 		this.main = pMain;
 	}
 
+	private class MyKeyEventHandler
+			implements
+			EventHandler<KeyEvent>
+	{
+
+		@Override
+		public void handle(KeyEvent pEvent)
+		{
+			if (pEvent.getCode() == KeyCode.SPACE && pEvent.isControlDown())
+			{
+				System.out.println("Ctrl-Space entered");
+				// TODO autocompletion here, described in
+				// https://stackoverflow.com/questions/36861056/javafx-textfield-auto-suggestions
+			}
+		}
+	}
+
 	@FXML
 	private void initialize()
 	{
@@ -96,6 +114,7 @@ public class CassandraEditorAppController
 			this.keyspacesMenu.disableProperty().bind(this.connectionProperty.isNull());
 			this.command.disableProperty().bind(this.sessionProperty.isNull());
 			this.command.editableProperty().bind(this.sessionProperty.isNotNull());
+			this.command.addEventFilter(KeyEvent.KEY_PRESSED, new MyKeyEventHandler());
 			this.executeCql.disableProperty().bind(
 					this.sessionProperty.isNull().or(this.command.textProperty().isEmpty()));
 			this.executeCql.setTooltip(new Tooltip("Press Ctrl-Enter to execute immediately"));
