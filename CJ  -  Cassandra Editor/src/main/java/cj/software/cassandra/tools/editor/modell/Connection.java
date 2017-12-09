@@ -1,6 +1,9 @@
 package cj.software.cassandra.tools.editor.modell;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -16,6 +19,8 @@ public class Connection
 	private String userid;
 
 	private String password;
+
+	private List<String> keyspaces = new ArrayList<>();
 
 	public Connection(String pHostname, String pUserid, String pPassword)
 	{
@@ -37,6 +42,21 @@ public class Connection
 	public String getPassword()
 	{
 		return this.password;
+	}
+
+	public List<String> getKeyspaces()
+	{
+		return Collections.unmodifiableList(this.keyspaces);
+	}
+
+	public void addKeyspace(String pKeyspace)
+	{
+		int lIndexOf = this.keyspaces.indexOf(pKeyspace);
+		if (lIndexOf >= 0)
+		{
+			this.keyspaces.remove(lIndexOf);
+		}
+		this.keyspaces.add(0, pKeyspace);
 	}
 
 	@Override

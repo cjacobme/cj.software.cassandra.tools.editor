@@ -10,9 +10,6 @@ import cj.software.cassandra.tools.editor.modell.Connection;
 
 public class RecentConnectionsRepository
 {
-	private static final String KEY_HOSTNAME = "hostname";
-	private static final String KEY_USERID = "user-id";
-	private static final String KEY_PASSWORD = "password";
 	private static final int MAX = 4;
 
 	private static final String recentsRoot = PreferencesKeys.PREFERENCES_ROOT
@@ -44,20 +41,33 @@ public class RecentConnectionsRepository
 	private void saveList(List<Connection> pConnectionsList)
 	{
 		Preferences lRecentRoots = Preferences.userRoot().node(recentsRoot);
-		int lCounter = 1;
-		for (Connection bConnection : pConnectionsList)
+		int lNumConnections = pConnectionsList.size();
+		for (int bConnection = 0; bConnection < lNumConnections; bConnection++)
 		{
-			Preferences lChildNode = lRecentRoots.node(String.format("%d", lCounter));
-			lChildNode.put(KEY_HOSTNAME, bConnection.getHostname());
-			if (bConnection.getUserid() != null)
+			Preferences lChildNode = lRecentRoots.node(String.format("%d", bConnection));
+			Connection lConnection = pConnectionsList.get(bConnection);
+			lChildNode.put(PreferencesKeys.KEY_HOSTNAME, lConnection.getHostname());
+			if (lConnection.getUserid() != null)
 			{
-				lChildNode.put(KEY_USERID, bConnection.getUserid());
+				lChildNode.put(PreferencesKeys.KEY_USERID, lConnection.getUserid());
 			}
-			if (bConnection.getPassword() != null)
+			if (lConnection.getPassword() != null)
 			{
-				lChildNode.put(KEY_PASSWORD, bConnection.getPassword());
+				lChildNode.put(PreferencesKeys.KEY_PASSWORD, lConnection.getPassword());
 			}
-			lCounter++;
+			this.saveKeyspaces(lChildNode, lConnection);
+		}
+	}
+
+	private void saveKeyspaces(Preferences pParentNode, Connection pConnection)
+	{
+		Preferences lContainer = pParentNode.node(PreferencesKeys.PREFERENCES_KEYSPACES);
+		List<String> lKeyspaces = pConnection.getKeyspaces();
+		int lNumKeyspaces = lKeyspaces.size();
+		for (int bKeyspace = 0; bKeyspace < lNumKeyspaces; bKeyspace++)
+		{
+			Preferences lChildNode = lContainer.node(String.format("%d", bKeyspace));
+			lChildNode.put("keyspace-name", lKeyspaces.get(bKeyspace));
 		}
 	}
 
@@ -72,14 +82,14 @@ public class RecentConnectionsRepository
 			for (String bChildName : lChildrenNames)
 			{
 				Preferences lChildNode = lRecentRoots.node(bChildName);
-				String lHostname = lChildNode.get(KEY_HOSTNAME, null);
+				String lHostname = lChildNode.get(PreferencesKeys.KEY_HOSTNAME, null);
 				if (lHostname == null)
 				{
 					throw new IllegalArgumentException(
 							"hostname of " + lChildNode.absolutePath() + " is null");
 				}
-				String lUserId = lChildNode.get(KEY_USERID, null);
-				String lPassword = lChildNode.get(KEY_PASSWORD, null);
+				String lUserId = lChildNode.get(PreferencesKeys.KEY_USERID, null);
+				String lPassword = lChildNode.get(PreferencesKeys.KEY_PASSWORD, null);
 				Connection lConnection = new Connection(lHostname, lUserId, lPassword);
 				lResult.add(lConnection);
 			}
