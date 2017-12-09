@@ -22,7 +22,7 @@ import cj.software.cassandra.tools.editor.modell.Connection;
 import cj.software.cassandra.tools.editor.storage.RecentConnectionsRepository;
 import cj.software.javafx.ThrowableStackTraceAlertFactory;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -382,24 +382,23 @@ public class CassandraEditorAppController
 		this.main.getPrimaryStage().setTitle(lTitle);
 	}
 
-	private class MyCellValueFactory
+	private class MyCellValueFactory<T>
 			implements
-			Callback<TableColumn.CellDataFeatures<Object, String>, ObservableValue<String>>
+			Callback<TableColumn.CellDataFeatures<Object, T>, ObservableValue<T>>
 	{
 
+		@SuppressWarnings("unchecked")
 		@Override
-		public ObservableValue<String> call(CellDataFeatures<Object, String> pParam)
+		public ObservableValue<T> call(CellDataFeatures<Object, T> pParam)
 		{
-			@SuppressWarnings("unchecked")
-			List<String> lRow = (List<String>) pParam.getValue();
-			TableColumn<Object, String> lTableColumn = pParam.getTableColumn();
+			List<Object> lRow = (List<Object>) pParam.getValue();
+			TableColumn<Object, T> lTableColumn = pParam.getTableColumn();
 			TableView<Object> lTableView = pParam.getTableView();
 			int lIndex = lTableView.getColumns().indexOf(lTableColumn);
-			String lValue = lRow.get(lIndex);
-			ObservableValue<String> lResult = new ReadOnlyStringWrapper(lValue);
+			T lValue = (T) lRow.get(lIndex);
+			ObservableValue<T> lResult = new ReadOnlyObjectWrapper<T>(lValue);
 			return lResult;
 		}
-
 	}
 
 	@FXML
@@ -419,17 +418,15 @@ public class CassandraEditorAppController
 				for (int bDefinition = 0; bDefinition < lNumDefinitions; bDefinition++)
 				{
 					Definition lDefinition = lDefinitions.get(bDefinition);
-					TableColumn<Object, String> lTableColumn = new TableColumn<>();
-					lTableColumn.setText(lDefinition.getName());
-					lTableColumn.setCellValueFactory(new MyCellValueFactory());
+					TableColumn<Object, ?> lTableColumn = this.createTableColumn(lDefinition);
 					this.results.getColumns().add(lTableColumn);
 				}
 				lRS.forEach(pRow ->
 				{
-					List<String> lRow = new ArrayList<>(lColumnDefinitions.size());
+					List<Object> lRow = new ArrayList<>(lColumnDefinitions.size());
 					for (int bCol = 0; bCol < lColumnDefinitions.size(); bCol++)
 					{
-						String lEntry = this.readValue(pRow, bCol, lDefinitions.get(bCol));
+						Object lEntry = this.readValue(pRow, bCol, lDefinitions.get(bCol));
 						lRow.add(lEntry);
 					}
 					this.results.getItems().add(FXCollections.observableArrayList(lRow));
@@ -452,19 +449,42 @@ public class CassandraEditorAppController
 		}
 	}
 
-	private String readValue(Row pRow, int pIndex, Definition pDefinition)
+	private TableColumn<Object, ?> createTableColumn(Definition pDefinition)
+	{
+		TableColumn<Object, ?> lResult;
+		Name lName = pDefinition.getType().getName();
+		switch (lName)
+		{
+		case DOUBLE:
+			lResult = new TableColumn<Object, Double>();
+			break;
+		case TIMESTAMP:
+			lResult = new TableColumn<Object, Instant>();
+			break;
+		case VARCHAR:
+		case TEXT:
+			lResult = new TableColumn<Object, String>();
+			break;
+		default:
+			throw new UnsupportedOperationException("not yet implemented: " + lName);
+		}
+		lResult.setText(pDefinition.getName());
+		lResult.setCellValueFactory(new MyCellValueFactory<>());
+		return lResult;
+	}
+
+	private Object readValue(Row pRow, int pIndex, Definition pDefinition)
 	{
 		Name lName = pDefinition.getType().getName();
-		String lResult;
+		Object lResult;
 		switch (lName)
 		{
 		case DOUBLE:
 			double lDoubleValue = pRow.getDouble(pIndex);
-			lResult = String.valueOf(lDoubleValue);
+			lResult = new Double(lDoubleValue);
 			break;
 		case TIMESTAMP:
-			Instant lInstant = pRow.get(pIndex, Instant.class);
-			lResult = lInstant.toString();
+			lResult = pRow.get(pIndex, Instant.class);
 			break;
 		case VARCHAR:
 		case TEXT:
