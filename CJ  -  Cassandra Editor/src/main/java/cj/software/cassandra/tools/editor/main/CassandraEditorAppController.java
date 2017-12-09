@@ -42,6 +42,10 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.Tooltip;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
@@ -94,6 +98,7 @@ public class CassandraEditorAppController
 			this.command.editableProperty().bind(this.sessionProperty.isNotNull());
 			this.executeCql.disableProperty().bind(
 					this.sessionProperty.isNull().or(this.command.textProperty().isEmpty()));
+			this.executeCql.setTooltip(new Tooltip("Press Ctrl-Enter to execute immediately"));
 		}
 		catch (Throwable pThrowable)
 		{
@@ -101,6 +106,21 @@ public class CassandraEditorAppController
 			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
 			lAlert.showAndWait();
 		}
+	}
+
+	public void initializeAccelorators(Scene pScene)
+	{
+		pScene.getAccelerators().put(
+				new KeyCodeCombination(KeyCode.ENTER, KeyCombination.CONTROL_DOWN),
+				new Runnable()
+				{
+
+					@Override
+					public void run()
+					{
+						CassandraEditorAppController.this.executeCql.fire();
+					}
+				});
 	}
 
 	private void insertRecents() throws BackingStoreException

@@ -47,12 +47,13 @@ public class CassandraEditorApp
 
 		FXMLLoader lLoader = new FXMLLoader(lURL);
 		this.rootPane = lLoader.load();
+		Scene lScene = new Scene(this.rootPane);
 
 		CassandraEditorAppController lController = lLoader.getController();
 		lController.setMain(this);
 
-		Scene lScene = new Scene(this.rootPane);
 		this.primaryStage.setScene(lScene);
+		lController.initializeAccelorators(lScene);
 		this.primaryStage.show();
 	}
 
