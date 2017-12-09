@@ -4,7 +4,12 @@ import java.net.URL;
 import java.util.List;
 import java.util.prefs.BackingStoreException;
 
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.Session;
+
 import cj.software.cassandra.tools.editor.connection.ConnectionDialogController;
+import cj.software.cassandra.tools.editor.connection.KeyspacesSelectDialogController;
 import cj.software.cassandra.tools.editor.modell.Connection;
 import cj.software.cassandra.tools.editor.storage.RecentConnectionsRepository;
 import cj.software.javafx.ThrowableStackTraceAlertFactory;
@@ -21,6 +26,7 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -30,7 +36,11 @@ public class CassandraEditorAppController
 
 	private ObjectProperty<Connection> connectionProperty = new SimpleObjectProperty<>();
 
+	private Cluster cluster;
+
 	private RecentConnectionsRepository recentConnectionsRepository = new RecentConnectionsRepository();
+
+	private Session session;
 
 	@FXML
 	private SeparatorMenuItem connectionBeforeRecentList;
@@ -107,6 +117,18 @@ public class CassandraEditorAppController
 			this.recentConnectionsRepository.save(pConnection);
 		}
 		this.main.getPrimaryStage().setTitle(lTitle);
+		if (this.session != null && !this.session.isClosed())
+		{
+			this.session.close();
+		}
+		if (this.cluster != null && !this.cluster.isClosed())
+		{
+			this.cluster.close();
+		}
+		if (pConnection != null)
+		{
+			this.cluster = Cluster.builder().addContactPoint(pConnection.getHostname()).build();
+		}
 	}
 
 	public ObjectProperty<Connection> connectionProperty()
@@ -159,5 +181,62 @@ public class CassandraEditorAppController
 			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
 			lAlert.showAndWait();
 		}
+	}
+
+	@FXML
+	private void handleSelectKeyspace()
+	{
+		try
+		{
+			String lFxmlFile = "KeyspacesSelectDialog.fxml";
+			URL lURL = KeyspacesSelectDialogController.class.getResource(lFxmlFile);
+			if (lURL == null)
+			{
+				throw new IllegalArgumentException(lFxmlFile + " not found in Classpath");
+			}
+			FXMLLoader lLoader = new FXMLLoader(lURL);
+			Pane lPane = lLoader.load();
+
+			Stage lDialogStage = new Stage();
+			lDialogStage.setTitle("Select Keyspace");
+			lDialogStage.initModality(Modality.WINDOW_MODAL);
+			lDialogStage.initOwner(this.main.getPrimaryStage());
+
+			Scene lScene = new Scene(lPane);
+			lDialogStage.setScene(lScene);
+
+			KeyspacesSelectDialogController lController = lLoader.getController();
+			lController.setDialogStage(lDialogStage);
+			lController.setCluster(this.cluster);
+
+			lDialogStage.showAndWait();
+
+			KeyspaceMetadata lSelectedKeyspace = lController.getSelectedKeyspace();
+			if (lSelectedKeyspace != null)
+			{
+				String lKeyspaceName = lSelectedKeyspace.getName();
+				this.openSession(lKeyspaceName);
+			}
+		}
+		catch (Throwable pThrowable)
+		{
+			pThrowable.printStackTrace(System.err);
+			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
+			lAlert.showAndWait();
+		}
+	}
+
+	public void openSession(String pKeyspaceName) throws BackingStoreException
+	{
+		Connection lConnection = this.getConnection();
+		lConnection.addKeyspace(pKeyspaceName);
+		this.recentConnectionsRepository.save(lConnection);
+		this.session = this.cluster.connect(pKeyspaceName);
+
+		String lTitle = String.format(
+				CassandraEditorApp.FMT_TITLE_HOST_KEYSPACE_CONNECTED,
+				lConnection.getHostname(),
+				pKeyspaceName);
+		this.main.getPrimaryStage().setTitle(lTitle);
 	}
 }

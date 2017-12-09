@@ -8,5 +8,6 @@ public interface PreferencesKeys
 	public static final String KEY_HOSTNAME = "hostname";
 	public static final String KEY_USERID = "user-id";
 	public static final String KEY_PASSWORD = "password";
+	public static final String KEY_KEYSPACE_NAME = "keyspace-name";
 
 }

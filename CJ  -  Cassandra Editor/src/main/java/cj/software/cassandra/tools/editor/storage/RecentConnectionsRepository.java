@@ -67,7 +67,7 @@ public class RecentConnectionsRepository
 		for (int bKeyspace = 0; bKeyspace < lNumKeyspaces; bKeyspace++)
 		{
 			Preferences lChildNode = lContainer.node(String.format("%d", bKeyspace));
-			lChildNode.put("keyspace-name", lKeyspaces.get(bKeyspace));
+			lChildNode.put(PreferencesKeys.KEY_KEYSPACE_NAME, lKeyspaces.get(bKeyspace));
 		}
 	}
 
@@ -92,6 +92,7 @@ public class RecentConnectionsRepository
 				String lPassword = lChildNode.get(PreferencesKeys.KEY_PASSWORD, null);
 				Connection lConnection = new Connection(lHostname, lUserId, lPassword);
 				lResult.add(lConnection);
+				this.readKeyspaces(lChildNode, lConnection);
 			}
 		}
 		else
@@ -99,5 +100,21 @@ public class RecentConnectionsRepository
 			lResult = Collections.emptyList();
 		}
 		return lResult;
+	}
+
+	private void readKeyspaces(Preferences pParentNode, Connection pConnection)
+			throws BackingStoreException
+	{
+		Preferences lContainer = pParentNode.node(PreferencesKeys.PREFERENCES_KEYSPACES);
+		String[] lChildrenNames = lContainer.childrenNames();
+		for (String bChildName : lChildrenNames)
+		{
+			Preferences lChildNode = lContainer.node(bChildName);
+			String lKeyspaceName = lChildNode.get(PreferencesKeys.KEY_KEYSPACE_NAME, null);
+			if (lKeyspaceName != null)
+			{
+				pConnection.addKeyspace(lKeyspaceName);
+			}
+		}
 	}
 }
