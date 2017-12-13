@@ -11,6 +11,8 @@ import java.util.prefs.BackingStoreException;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
+import com.datastax.driver.core.ColumnMetadata;
+import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.DataType.Name;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.MaterializedViewMetadata;
@@ -567,6 +569,9 @@ public class CassandraEditorAppController
 		case TEXT:
 			lResult = new TableColumn<Object, String>();
 			break;
+		case UUID:
+			lResult = new TableColumn<Object, String>();
+			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
 		}
@@ -592,9 +597,112 @@ public class CassandraEditorAppController
 		case TEXT:
 			lResult = pRow.getString(pIndex);
 			break;
+		case UUID:
+			lResult = pRow.getUUID(pIndex);
+			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
 		}
 		return lResult;
+	}
+
+	@FXML
+	private void handleCreateInsertStmt()
+	{
+		try
+		{
+			String lSelectedTableName = this.listOfTables.getSelectionModel().getSelectedItem();
+			if (lSelectedTableName != null)
+			{
+				Session lSession = this.getSession();
+				Metadata lMetadata = lSession.getCluster().getMetadata();
+				KeyspaceMetadata lKeyspaceMeta = lMetadata.getKeyspace(
+						lSession.getLoggedKeyspace());
+				TableMetadata lTableMeta = lKeyspaceMeta.getTable(lSelectedTableName);
+				List<ColumnMetadata> lColumns = lTableMeta.getColumns();
+				StringBuilder lCols = new StringBuilder("INSERT INTO ")
+						.append(lSelectedTableName)
+						.append(" (");
+				StringBuilder lVals = new StringBuilder(" VALUES (");
+				for (ColumnMetadata bCol : lColumns)
+				{
+					String lName = bCol.getName();
+					lCols.append(lName).append(", ");
+					lVals.append("?, ");
+				}
+
+				lCols.deleteCharAt(lCols.length() - 1);
+				lCols.deleteCharAt(lCols.length() - 1);
+				lCols.append(") ");
+				lVals.deleteCharAt(lVals.length() - 1);
+				lVals.deleteCharAt(lVals.length() - 1);
+				lVals.append(")");
+
+				String lTotal = lCols.toString() + lVals.toString();
+				this.command.setText(lTotal);
+			}
+		}
+		catch (Throwable pThrowable)
+		{
+			pThrowable.printStackTrace(System.err);
+			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
+			lAlert.showAndWait();
+		}
+	}
+
+	@FXML
+	private void handleCreateInsertStmtWithTypes()
+	{
+		try
+		{
+			String lSelectedTableName = this.listOfTables.getSelectionModel().getSelectedItem();
+			if (lSelectedTableName != null)
+			{
+				Session lSession = this.getSession();
+				Metadata lMetadata = lSession.getCluster().getMetadata();
+				KeyspaceMetadata lKeyspaceMeta = lMetadata.getKeyspace(
+						lSession.getLoggedKeyspace());
+				TableMetadata lTableMeta = lKeyspaceMeta.getTable(lSelectedTableName);
+				List<ColumnMetadata> lColumns = lTableMeta.getColumns();
+				StringBuilder lCols = new StringBuilder("INSERT INTO ")
+						.append(lSelectedTableName)
+						.append(" (\r\n");
+				StringBuilder lVals = new StringBuilder(" VALUES (\r\n");
+
+				int lMaxNameLength = -1;
+				for (ColumnMetadata bCol : lColumns)
+				{
+					String lName = bCol.getName();
+					lMaxNameLength = Math.max(lMaxNameLength, lName.length());
+				}
+				lMaxNameLength++;
+				String lFormat = "%-" + lMaxNameLength + "s";
+
+				for (ColumnMetadata bCol : lColumns)
+				{
+					String lName = String.format(lFormat, bCol.getName());
+					DataType lType = bCol.getType();
+					lCols.append("     ").append(lName).append(", -- ").append(lType).append(
+							"\r\n");
+					lVals.append("\t?, -- ").append(lName).append("\r\n");
+				}
+
+				int lLastComma = lCols.lastIndexOf(",");
+				lCols.replace(lLastComma, lLastComma + 1, " ");
+				lCols.append(") ");
+				lLastComma = lVals.lastIndexOf(",");
+				lVals.replace(lLastComma, lLastComma + 1, " ");
+				lVals.append(")");
+
+				String lTotal = lCols.toString() + lVals.toString();
+				this.command.setText(lTotal);
+			}
+		}
+		catch (Throwable pThrowable)
+		{
+			pThrowable.printStackTrace(System.err);
+			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
+			lAlert.showAndWait();
+		}
 	}
 }
