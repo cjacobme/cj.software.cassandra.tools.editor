@@ -3,6 +3,8 @@ package cj.software.cassandra.tools.editor.main;
 import java.net.URL;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.prefs.BackingStoreException;
 
@@ -11,9 +13,13 @@ import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.DataType.Name;
 import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.MaterializedViewMetadata;
+import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.TableMetadata;
+import com.datastax.driver.core.UserType;
 import com.datastax.driver.extras.codecs.jdk8.InstantCodec;
 
 import cj.software.cassandra.tools.editor.connection.ConnectionDialogController;
@@ -35,9 +41,12 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ListView;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.TableView;
@@ -83,26 +92,21 @@ public class CassandraEditorAppController
 	@FXML
 	private TableView<Object> results;
 
+	@FXML
+	private TabPane keyspaceDetails;
+
+	@FXML
+	private ListView<String> listOfTables;
+
+	@FXML
+	private ListView<String> listOfMaterializedViews;
+
+	@FXML
+	private ListView<String> listOfUDTs;
+
 	void setMain(CassandraEditorApp pMain)
 	{
 		this.main = pMain;
-	}
-
-	private class MyKeyEventHandler
-			implements
-			EventHandler<KeyEvent>
-	{
-
-		@Override
-		public void handle(KeyEvent pEvent)
-		{
-			if (pEvent.getCode() == KeyCode.SPACE && pEvent.isControlDown())
-			{
-				System.out.println("Ctrl-Space entered");
-				// TODO autocompletion here, described in
-				// https://stackoverflow.com/questions/36861056/javafx-textfield-auto-suggestions
-			}
-		}
 	}
 
 	@FXML
@@ -118,6 +122,14 @@ public class CassandraEditorAppController
 			this.executeCql.disableProperty().bind(
 					this.sessionProperty.isNull().or(this.command.textProperty().isEmpty()));
 			this.executeCql.setTooltip(new Tooltip("Press Ctrl-Enter to execute immediately"));
+			this.keyspaceDetails.disableProperty().bind(this.sessionProperty.isNull());
+			ObservableList<Tab> lTabs = this.keyspaceDetails.getTabs();
+			for (Tab bTab : lTabs)
+			{
+				bTab.disableProperty().bind(this.sessionProperty.isNull());
+			}
+			this.listOfTables.disableProperty().bind(this.sessionProperty.isNull());
+			this.listOfMaterializedViews.disableProperty().bind(this.sessionProperty.isNull());
 		}
 		catch (Throwable pThrowable)
 		{
@@ -140,6 +152,23 @@ public class CassandraEditorAppController
 						CassandraEditorAppController.this.executeCql.fire();
 					}
 				});
+	}
+
+	private class MyKeyEventHandler
+			implements
+			EventHandler<KeyEvent>
+	{
+
+		@Override
+		public void handle(KeyEvent pEvent)
+		{
+			if (pEvent.getCode() == KeyCode.SPACE && pEvent.isControlDown())
+			{
+				System.out.println("Ctrl-Space entered");
+				// TODO autocompletion here, described in
+				// https://stackoverflow.com/questions/36861056/javafx-textfield-auto-suggestions
+			}
+		}
 	}
 
 	private void insertRecents() throws BackingStoreException
@@ -277,6 +306,58 @@ public class CassandraEditorAppController
 	public void setSession(Session pSession)
 	{
 		this.sessionProperty.set(pSession);
+
+		this.listOfMaterializedViews.getItems().clear();
+		this.listOfTables.getItems().clear();
+		this.listOfUDTs.getItems().clear();
+
+		if (pSession != null)
+		{
+			Metadata lMetadata = pSession.getCluster().getMetadata();
+			KeyspaceMetadata lKeyspaceMeta = lMetadata.getKeyspace(pSession.getLoggedKeyspace());
+			this.insertTableNames(lKeyspaceMeta);
+			this.insertMaterializedViews(lKeyspaceMeta);
+			this.insertUDTs(lKeyspaceMeta);
+		}
+	}
+
+	private void insertTableNames(KeyspaceMetadata pMeta)
+	{
+		Collection<TableMetadata> lTables = pMeta.getTables();
+		List<String> lNames = new ArrayList<>();
+		for (TableMetadata bTableMeta : lTables)
+		{
+			String lName = bTableMeta.getName();
+			lNames.add(lName);
+		}
+		Collections.sort(lNames);
+		this.listOfTables.getItems().addAll(lNames);
+	}
+
+	private void insertMaterializedViews(KeyspaceMetadata pMeta)
+	{
+		Collection<MaterializedViewMetadata> lMaterializedViews = pMeta.getMaterializedViews();
+		List<String> lNames = new ArrayList<>();
+		for (MaterializedViewMetadata bMatrlzdViewMeta : lMaterializedViews)
+		{
+			String lName = bMatrlzdViewMeta.getName();
+			lNames.add(lName);
+		}
+		Collections.sort(lNames);
+		this.listOfMaterializedViews.getItems().addAll(lNames);
+	}
+
+	private void insertUDTs(KeyspaceMetadata pMeta)
+	{
+		Collection<UserType> lUserTypes = pMeta.getUserTypes();
+		List<String> lNames = new ArrayList<>();
+		for (UserType bUserType : lUserTypes)
+		{
+			String lName = bUserType.getTypeName();
+			lNames.add(lName);
+		}
+		Collections.sort(lNames);
+		this.listOfUDTs.getItems().addAll(lNames);
 	}
 
 	public Session getSession()
