@@ -88,6 +88,8 @@
                                 <items>
                                   <MenuItem mnemonicParsing="false" onAction="#handleCreateInsertStmt" text="INSERT" />
                                     <MenuItem mnemonicParsing="false" onAction="#handleCreateInsertStmtWithTypes" text="INSERT with Types" />
+                                    <SeparatorMenuItem mnemonicParsing="false" />
+                                    <MenuItem mnemonicParsing="false" onAction="#handleDdl" text="CREATE" />
                                 </items>
                               </ContextMenu>
                            </contextMenu></ListView>

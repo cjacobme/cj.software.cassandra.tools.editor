@@ -705,4 +705,29 @@ public class CassandraEditorAppController
 			lAlert.showAndWait();
 		}
 	}
+
+	@FXML
+	private void handleDdl()
+	{
+		try
+		{
+			String lSelectedTableName = this.listOfTables.getSelectionModel().getSelectedItem();
+			if (lSelectedTableName != null)
+			{
+				Session lSession = this.getSession();
+				Metadata lMetadata = lSession.getCluster().getMetadata();
+				KeyspaceMetadata lKeyspaceMeta = lMetadata.getKeyspace(
+						lSession.getLoggedKeyspace());
+				TableMetadata lTableMeta = lKeyspaceMeta.getTable(lSelectedTableName);
+				String lDdl = lTableMeta.asCQLQuery();
+				this.command.setText(lDdl);
+			}
+		}
+		catch (Throwable pThrowable)
+		{
+			pThrowable.printStackTrace(System.err);
+			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
+			lAlert.showAndWait();
+		}
+	}
 }
