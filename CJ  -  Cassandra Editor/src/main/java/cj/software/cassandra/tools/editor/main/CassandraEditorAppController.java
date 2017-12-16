@@ -573,6 +573,12 @@ public class CassandraEditorAppController
 		case UUID:
 			lResult = new TableColumn<Object, String>();
 			break;
+		case FLOAT:
+			lResult = new TableColumn<Object, Float>();
+			break;
+		case SMALLINT:
+			lResult = new TableColumn<Object, Short>();
+			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
 		}
@@ -600,6 +606,14 @@ public class CassandraEditorAppController
 			break;
 		case UUID:
 			lResult = pRow.getUUID(pIndex);
+			break;
+		case FLOAT:
+			float lFloatValue = pRow.getFloat(pIndex);
+			lResult = new Float(lFloatValue);
+			break;
+		case SMALLINT:
+			short lShortValue = pRow.getShort(pIndex);
+			lResult = new Short(lShortValue);
 			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
