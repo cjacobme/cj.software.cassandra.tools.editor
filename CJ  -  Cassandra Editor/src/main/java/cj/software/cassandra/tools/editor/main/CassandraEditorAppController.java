@@ -1,7 +1,6 @@
 package cj.software.cassandra.tools.editor.main;
 
 import java.net.URL;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -14,17 +13,16 @@ import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.ColumnMetadata;
 import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.DataType.Name;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.MaterializedViewMetadata;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.UserType;
 import com.datastax.driver.extras.codecs.jdk8.InstantCodec;
 
+import cj.software.cassandra.helper.TypeMapper;
 import cj.software.cassandra.tools.editor.connection.ConnectionDialogController;
 import cj.software.cassandra.tools.editor.connection.KeyspacesSelectDialogController;
 import cj.software.cassandra.tools.editor.modell.Connection;
@@ -521,7 +519,8 @@ public class CassandraEditorAppController
 				for (int bDefinition = 0; bDefinition < lNumDefinitions; bDefinition++)
 				{
 					Definition lDefinition = lDefinitions.get(bDefinition);
-					TableColumn<Object, ?> lTableColumn = this.createTableColumn(lDefinition);
+					TableColumn<Object, ?> lTableColumn = TypeMapper.createTableColumn(lDefinition);
+					lTableColumn.setCellValueFactory(new MyCellValueFactory<>());
 					this.results.getColumns().add(lTableColumn);
 				}
 				lRS.forEach(pRow ->
@@ -529,7 +528,7 @@ public class CassandraEditorAppController
 					List<Object> lRow = new ArrayList<>(lColumnDefinitions.size());
 					for (int bCol = 0; bCol < lColumnDefinitions.size(); bCol++)
 					{
-						Object lEntry = this.readValue(pRow, bCol, lDefinitions.get(bCol));
+						Object lEntry = TypeMapper.readValue(pRow, bCol, lDefinitions.get(bCol));
 						lRow.add(lEntry);
 					}
 					this.results.getItems().add(FXCollections.observableArrayList(lRow));
@@ -550,75 +549,6 @@ public class CassandraEditorAppController
 			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
 			lAlert.showAndWait();
 		}
-	}
-
-	private TableColumn<Object, ?> createTableColumn(Definition pDefinition)
-	{
-		TableColumn<Object, ?> lResult;
-		Name lName = pDefinition.getType().getName();
-		switch (lName)
-		{
-		case DOUBLE:
-			lResult = new TableColumn<Object, Double>();
-			lResult.setStyle("-fx-alignment: CENTER-RIGHT;-fx-font-family: \"Courier New\";");
-			break;
-		case TIMESTAMP:
-			lResult = new TableColumn<Object, Instant>();
-			lResult.setStyle("-fx-font-family: \"Courier New\";");
-			break;
-		case VARCHAR:
-		case TEXT:
-			lResult = new TableColumn<Object, String>();
-			break;
-		case UUID:
-			lResult = new TableColumn<Object, String>();
-			break;
-		case FLOAT:
-			lResult = new TableColumn<Object, Float>();
-			break;
-		case SMALLINT:
-			lResult = new TableColumn<Object, Short>();
-			break;
-		default:
-			throw new UnsupportedOperationException("not yet implemented: " + lName);
-		}
-		lResult.setText(pDefinition.getName());
-		lResult.setCellValueFactory(new MyCellValueFactory<>());
-		return lResult;
-	}
-
-	private Object readValue(Row pRow, int pIndex, Definition pDefinition)
-	{
-		Name lName = pDefinition.getType().getName();
-		Object lResult;
-		switch (lName)
-		{
-		case DOUBLE:
-			double lDoubleValue = pRow.getDouble(pIndex);
-			lResult = new Double(lDoubleValue);
-			break;
-		case TIMESTAMP:
-			lResult = pRow.get(pIndex, Instant.class);
-			break;
-		case VARCHAR:
-		case TEXT:
-			lResult = pRow.getString(pIndex);
-			break;
-		case UUID:
-			lResult = pRow.getUUID(pIndex);
-			break;
-		case FLOAT:
-			float lFloatValue = pRow.getFloat(pIndex);
-			lResult = new Float(lFloatValue);
-			break;
-		case SMALLINT:
-			short lShortValue = pRow.getShort(pIndex);
-			lResult = new Short(lShortValue);
-			break;
-		default:
-			throw new UnsupportedOperationException("not yet implemented: " + lName);
-		}
-		return lResult;
 	}
 
 	private void callTableMetaDataAction(Consumer<TableMetadata> pConsumer)
