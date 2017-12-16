@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.prefs.BackingStoreException;
 
 import com.datastax.driver.core.Cluster;
@@ -606,41 +607,25 @@ public class CassandraEditorAppController
 		return lResult;
 	}
 
+	private void callTableMetaDataAction(Consumer<TableMetadata> pConsumer)
+	{
+		String lSelectedTableName = this.listOfTables.getSelectionModel().getSelectedItem();
+		if (lSelectedTableName != null)
+		{
+			Session lSession = this.getSession();
+			Metadata lMetadata = lSession.getCluster().getMetadata();
+			KeyspaceMetadata lKeyspaceMeta = lMetadata.getKeyspace(lSession.getLoggedKeyspace());
+			TableMetadata lTableMeta = lKeyspaceMeta.getTable(lSelectedTableName);
+			pConsumer.accept(lTableMeta);
+		}
+	}
+
 	@FXML
 	private void handleCreateInsertStmt()
 	{
 		try
 		{
-			String lSelectedTableName = this.listOfTables.getSelectionModel().getSelectedItem();
-			if (lSelectedTableName != null)
-			{
-				Session lSession = this.getSession();
-				Metadata lMetadata = lSession.getCluster().getMetadata();
-				KeyspaceMetadata lKeyspaceMeta = lMetadata.getKeyspace(
-						lSession.getLoggedKeyspace());
-				TableMetadata lTableMeta = lKeyspaceMeta.getTable(lSelectedTableName);
-				List<ColumnMetadata> lColumns = lTableMeta.getColumns();
-				StringBuilder lCols = new StringBuilder("INSERT INTO ")
-						.append(lSelectedTableName)
-						.append(" (");
-				StringBuilder lVals = new StringBuilder(" VALUES (");
-				for (ColumnMetadata bCol : lColumns)
-				{
-					String lName = bCol.getName();
-					lCols.append(lName).append(", ");
-					lVals.append("?, ");
-				}
-
-				lCols.deleteCharAt(lCols.length() - 1);
-				lCols.deleteCharAt(lCols.length() - 1);
-				lCols.append(") ");
-				lVals.deleteCharAt(lVals.length() - 1);
-				lVals.deleteCharAt(lVals.length() - 1);
-				lVals.append(")");
-
-				String lTotal = lCols.toString() + lVals.toString();
-				this.command.setText(lTotal);
-			}
+			this.callTableMetaDataAction(this::createInsertStmt);
 		}
 		catch (Throwable pThrowable)
 		{
@@ -648,6 +633,30 @@ public class CassandraEditorAppController
 			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
 			lAlert.showAndWait();
 		}
+	}
+
+	private void createInsertStmt(TableMetadata pMetadata)
+	{
+		String lTableName = pMetadata.getName();
+		List<ColumnMetadata> lColumns = pMetadata.getColumns();
+		StringBuilder lCols = new StringBuilder("INSERT INTO ").append(lTableName).append(" (");
+		StringBuilder lVals = new StringBuilder(" VALUES (");
+		for (ColumnMetadata bCol : lColumns)
+		{
+			String lName = bCol.getName();
+			lCols.append(lName).append(", ");
+			lVals.append("?, ");
+		}
+
+		lCols.deleteCharAt(lCols.length() - 1);
+		lCols.deleteCharAt(lCols.length() - 1);
+		lCols.append(") ");
+		lVals.deleteCharAt(lVals.length() - 1);
+		lVals.deleteCharAt(lVals.length() - 1);
+		lVals.append(")");
+
+		String lTotal = lCols.toString() + lVals.toString();
+		this.command.setText(lTotal);
 	}
 
 	@FXML
@@ -655,48 +664,7 @@ public class CassandraEditorAppController
 	{
 		try
 		{
-			String lSelectedTableName = this.listOfTables.getSelectionModel().getSelectedItem();
-			if (lSelectedTableName != null)
-			{
-				Session lSession = this.getSession();
-				Metadata lMetadata = lSession.getCluster().getMetadata();
-				KeyspaceMetadata lKeyspaceMeta = lMetadata.getKeyspace(
-						lSession.getLoggedKeyspace());
-				TableMetadata lTableMeta = lKeyspaceMeta.getTable(lSelectedTableName);
-				List<ColumnMetadata> lColumns = lTableMeta.getColumns();
-				StringBuilder lCols = new StringBuilder("INSERT INTO ")
-						.append(lSelectedTableName)
-						.append(" (\r\n");
-				StringBuilder lVals = new StringBuilder(" VALUES (\r\n");
-
-				int lMaxNameLength = -1;
-				for (ColumnMetadata bCol : lColumns)
-				{
-					String lName = bCol.getName();
-					lMaxNameLength = Math.max(lMaxNameLength, lName.length());
-				}
-				lMaxNameLength++;
-				String lFormat = "%-" + lMaxNameLength + "s";
-
-				for (ColumnMetadata bCol : lColumns)
-				{
-					String lName = String.format(lFormat, bCol.getName());
-					DataType lType = bCol.getType();
-					lCols.append("     ").append(lName).append(", -- ").append(lType).append(
-							"\r\n");
-					lVals.append("\t?, -- ").append(lName).append("\r\n");
-				}
-
-				int lLastComma = lCols.lastIndexOf(",");
-				lCols.replace(lLastComma, lLastComma + 1, " ");
-				lCols.append(") ");
-				lLastComma = lVals.lastIndexOf(",");
-				lVals.replace(lLastComma, lLastComma + 1, " ");
-				lVals.append(")");
-
-				String lTotal = lCols.toString() + lVals.toString();
-				this.command.setText(lTotal);
-			}
+			this.callTableMetaDataAction(this::createInsertStmtWithTypes);
 		}
 		catch (Throwable pThrowable)
 		{
@@ -706,22 +674,47 @@ public class CassandraEditorAppController
 		}
 	}
 
+	private void createInsertStmtWithTypes(TableMetadata pTableMetadata)
+	{
+		String lTableName = pTableMetadata.getName();
+		List<ColumnMetadata> lColumns = pTableMetadata.getColumns();
+		StringBuilder lCols = new StringBuilder("INSERT INTO ").append(lTableName).append(" (\r\n");
+		StringBuilder lVals = new StringBuilder(" VALUES (\r\n");
+
+		int lMaxNameLength = -1;
+		for (ColumnMetadata bCol : lColumns)
+		{
+			String lName = bCol.getName();
+			lMaxNameLength = Math.max(lMaxNameLength, lName.length());
+		}
+		lMaxNameLength++;
+		String lFormat = "%-" + lMaxNameLength + "s";
+
+		for (ColumnMetadata bCol : lColumns)
+		{
+			String lName = String.format(lFormat, bCol.getName());
+			DataType lType = bCol.getType();
+			lCols.append("     ").append(lName).append(", -- ").append(lType).append("\r\n");
+			lVals.append("\t?, -- ").append(lName).append("\r\n");
+		}
+
+		int lLastComma = lCols.lastIndexOf(",");
+		lCols.replace(lLastComma, lLastComma + 1, " ");
+		lCols.append(") ");
+		lLastComma = lVals.lastIndexOf(",");
+		lVals.replace(lLastComma, lLastComma + 1, " ");
+		lVals.append(")");
+
+		String lTotal = lCols.toString() + lVals.toString();
+		this.command.setText(lTotal);
+	}
+
 	@FXML
 	private void handleDdl()
 	{
 		try
 		{
-			String lSelectedTableName = this.listOfTables.getSelectionModel().getSelectedItem();
-			if (lSelectedTableName != null)
-			{
-				Session lSession = this.getSession();
-				Metadata lMetadata = lSession.getCluster().getMetadata();
-				KeyspaceMetadata lKeyspaceMeta = lMetadata.getKeyspace(
-						lSession.getLoggedKeyspace());
-				TableMetadata lTableMeta = lKeyspaceMeta.getTable(lSelectedTableName);
-				String lDdl = lTableMeta.asCQLQuery();
-				this.command.setText(lDdl);
-			}
+			this.callTableMetaDataAction(this::ddl);
 		}
 		catch (Throwable pThrowable)
 		{
@@ -729,5 +722,11 @@ public class CassandraEditorAppController
 			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
 			lAlert.showAndWait();
 		}
+	}
+
+	private void ddl(TableMetadata pTableMetadata)
+	{
+		String lDdl = pTableMetadata.asCQLQuery();
+		this.command.setText(lDdl);
 	}
 }
