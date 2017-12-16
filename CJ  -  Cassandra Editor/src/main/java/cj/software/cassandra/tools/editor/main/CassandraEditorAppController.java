@@ -9,6 +9,7 @@ import java.util.function.Function;
 import java.util.prefs.BackingStoreException;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.ColumnMetadata;
@@ -21,6 +22,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.UserType;
 import com.datastax.driver.extras.codecs.jdk8.InstantCodec;
+import com.datastax.driver.extras.codecs.jdk8.LocalDateCodec;
 
 import cj.software.cassandra.tools.editor.connection.ConnectionDialogController;
 import cj.software.cassandra.tools.editor.connection.KeyspacesSelectDialogController;
@@ -290,7 +292,9 @@ public class CassandraEditorAppController
 		this.clusterProperty.set(pCluster);
 		if (pCluster != null)
 		{
-			pCluster.getConfiguration().getCodecRegistry().register(InstantCodec.instance);
+			CodecRegistry lCodecRegistry = pCluster.getConfiguration().getCodecRegistry();
+			lCodecRegistry.register(InstantCodec.instance).register(LocalDateCodec.instance);
+
 		}
 	}
 
@@ -563,6 +567,7 @@ public class CassandraEditorAppController
 			String lStatement = pFunction.apply(lTableMeta);
 			this.command.setText(lStatement);
 			this.command.requestFocus();
+			this.results.getColumns().clear();
 		}
 	}
 

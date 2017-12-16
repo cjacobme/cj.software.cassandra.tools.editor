@@ -1,6 +1,7 @@
 package cj.software.cassandra.tools.editor.helper;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.DataType.Name;
@@ -38,6 +39,9 @@ public class TypeMapper
 		case SMALLINT:
 			lResult = new TableColumn<S, Short>();
 			break;
+		case DATE:
+			lResult = new TableColumn<S, LocalDate>();
+			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
 		}
@@ -72,6 +76,9 @@ public class TypeMapper
 		case SMALLINT:
 			short lShortValue = pRow.getShort(pIndex);
 			lResult = new Short(lShortValue);
+			break;
+		case DATE:
+			lResult = pRow.get(pIndex, LocalDate.class);
 			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
