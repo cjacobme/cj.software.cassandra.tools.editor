@@ -567,7 +567,6 @@ public class CassandraEditorAppController
 			String lStatement = pFunction.apply(lTableMeta);
 			this.command.setText(lStatement);
 			this.command.requestFocus();
-			this.results.getColumns().clear();
 		}
 	}
 
