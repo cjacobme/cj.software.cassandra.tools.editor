@@ -22,9 +22,9 @@ import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.UserType;
 import com.datastax.driver.extras.codecs.jdk8.InstantCodec;
 
-import cj.software.cassandra.helper.TypeMapper;
 import cj.software.cassandra.tools.editor.connection.ConnectionDialogController;
 import cj.software.cassandra.tools.editor.connection.KeyspacesSelectDialogController;
+import cj.software.cassandra.tools.editor.helper.TypeMapper;
 import cj.software.cassandra.tools.editor.modell.Connection;
 import cj.software.cassandra.tools.editor.storage.RecentConnectionsRepository;
 import cj.software.javafx.ThrowableStackTraceAlertFactory;

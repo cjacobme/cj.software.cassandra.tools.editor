@@ -1,4 +1,4 @@
-package cj.software.cassandra.helper;
+package cj.software.cassandra.tools.editor.helper;
 
 import java.time.Instant;
 
