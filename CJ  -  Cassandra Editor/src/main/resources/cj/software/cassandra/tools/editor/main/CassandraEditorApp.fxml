@@ -89,7 +89,11 @@
                                   <MenuItem mnemonicParsing="false" onAction="#handleCreateInsertStmt" text="INSERT" />
                                     <MenuItem mnemonicParsing="false" onAction="#handleCreateInsertStmtWithTypes" text="INSERT with Types" />
                                     <SeparatorMenuItem mnemonicParsing="false" />
-                                    <MenuItem mnemonicParsing="false" onAction="#handleDdl" text="CREATE" />
+                                    <MenuItem mnemonicParsing="false" onAction="#handleCreateSelectSimple" text="SELECT (simple)" />
+                                    <MenuItem mnemonicParsing="false" onAction="#handleCreateSelectWithPartitionKeys" text="SELECT (partition keys)" />
+                                    <MenuItem mnemonicParsing="false" onAction="#handleCreateSelectWithPrimaryKeys" text="SELECT (partition &amp; clustering)" />
+                                    <SeparatorMenuItem mnemonicParsing="false" />
+                                    <MenuItem mnemonicParsing="false" onAction="#handleDdl" text="DDL" />
                                 </items>
                               </ContextMenu>
                            </contextMenu></ListView>

@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.prefs.BackingStoreException;
 
 import com.datastax.driver.core.Cluster;
@@ -551,7 +551,7 @@ public class CassandraEditorAppController
 		}
 	}
 
-	private void callTableMetaDataAction(Consumer<TableMetadata> pConsumer)
+	private void callTableMetaDataAction(Function<TableMetadata, String> pFunction)
 	{
 		String lSelectedTableName = this.listOfTables.getSelectionModel().getSelectedItem();
 		if (lSelectedTableName != null)
@@ -560,7 +560,9 @@ public class CassandraEditorAppController
 			Metadata lMetadata = lSession.getCluster().getMetadata();
 			KeyspaceMetadata lKeyspaceMeta = lMetadata.getKeyspace(lSession.getLoggedKeyspace());
 			TableMetadata lTableMeta = lKeyspaceMeta.getTable(lSelectedTableName);
-			pConsumer.accept(lTableMeta);
+			String lStatement = pFunction.apply(lTableMeta);
+			this.command.setText(lStatement);
+			this.command.requestFocus();
 		}
 	}
 
@@ -579,7 +581,7 @@ public class CassandraEditorAppController
 		}
 	}
 
-	private void createInsertStmt(TableMetadata pMetadata)
+	private String createInsertStmt(TableMetadata pMetadata)
 	{
 		String lTableName = pMetadata.getName();
 		List<ColumnMetadata> lColumns = pMetadata.getColumns();
@@ -600,7 +602,7 @@ public class CassandraEditorAppController
 		lVals.append(")");
 
 		String lTotal = lCols.toString() + lVals.toString();
-		this.command.setText(lTotal);
+		return lTotal;
 	}
 
 	@FXML
@@ -618,20 +620,25 @@ public class CassandraEditorAppController
 		}
 	}
 
-	private void createInsertStmtWithTypes(TableMetadata pTableMetadata)
+	private int getMaxNameLength(List<ColumnMetadata> pColumns)
+	{
+		int lMaxNameLength = -1;
+		for (ColumnMetadata bCol : pColumns)
+		{
+			String lName = bCol.getName();
+			lMaxNameLength = Math.max(lMaxNameLength, lName.length());
+		}
+		return lMaxNameLength;
+	}
+
+	private String createInsertStmtWithTypes(TableMetadata pTableMetadata)
 	{
 		String lTableName = pTableMetadata.getName();
 		List<ColumnMetadata> lColumns = pTableMetadata.getColumns();
 		StringBuilder lCols = new StringBuilder("INSERT INTO ").append(lTableName).append(" (\r\n");
 		StringBuilder lVals = new StringBuilder(" VALUES (\r\n");
 
-		int lMaxNameLength = -1;
-		for (ColumnMetadata bCol : lColumns)
-		{
-			String lName = bCol.getName();
-			lMaxNameLength = Math.max(lMaxNameLength, lName.length());
-		}
-		lMaxNameLength++;
+		int lMaxNameLength = this.getMaxNameLength(lColumns) + 1;
 		String lFormat = "%-" + lMaxNameLength + "s";
 
 		for (ColumnMetadata bCol : lColumns)
@@ -650,7 +657,7 @@ public class CassandraEditorAppController
 		lVals.append(")");
 
 		String lTotal = lCols.toString() + lVals.toString();
-		this.command.setText(lTotal);
+		return lTotal;
 	}
 
 	@FXML
@@ -668,9 +675,118 @@ public class CassandraEditorAppController
 		}
 	}
 
-	private void ddl(TableMetadata pTableMetadata)
+	private String ddl(TableMetadata pTableMetadata)
 	{
-		String lDdl = pTableMetadata.asCQLQuery();
-		this.command.setText(lDdl);
+		String lDDL = pTableMetadata.asCQLQuery();
+		return lDDL;
+	}
+
+	@FXML
+	private void handleCreateSelectSimple()
+	{
+		try
+		{
+			this.callTableMetaDataAction(this::createSelectSimple);
+		}
+		catch (Throwable pThrowable)
+		{
+			pThrowable.printStackTrace(System.err);
+			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
+			lAlert.showAndWait();
+		}
+	}
+
+	private String createSelectSimple(TableMetadata pTableMetadata)
+	{
+		String lName = pTableMetadata.getName();
+		String lStatement = "SELECT * FROM " + lName;
+		return lStatement;
+	}
+
+	@FXML
+	private void handleCreateSelectWithPartitionKeys()
+	{
+		try
+		{
+			this.callTableMetaDataAction(this::createSelectWithPartitionKeys);
+		}
+		catch (Throwable pThrowable)
+		{
+			pThrowable.printStackTrace(System.err);
+			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
+			lAlert.showAndWait();
+		}
+	}
+
+	private String createSelectWithPartitionKeys(TableMetadata pTableMetadata)
+	{
+		String lTableName = pTableMetadata.getName();
+		StringBuilder lSB = new StringBuilder("SELECT * FROM ").append(lTableName).append("\r\n");
+
+		List<ColumnMetadata> lPartitionKeyColumns = pTableMetadata.getPartitionKey();
+		int lMaxNameLength = this.getMaxNameLength(lPartitionKeyColumns) + 1;
+		String lNameFormat = String.format("%%%ds", lMaxNameLength);
+
+		ColumnMetadata lColumnMeta = lPartitionKeyColumns.get(0);
+		String lColName = String.format(lNameFormat, lColumnMeta.getName());
+		lSB
+				.append("WHERE ")
+				.append(lColName)
+				.append(" = ?   -- ")
+				.append(lColumnMeta.getType().toString())
+				.append("\r\n");
+
+		for (int bCol = 1; bCol < lPartitionKeyColumns.size(); bCol++)
+		{
+			lColumnMeta = lPartitionKeyColumns.get(bCol);
+			lColName = String.format(lNameFormat, lColumnMeta.getName());
+			lSB
+					.append("   AND")
+					.append(lColName)
+					.append(" = ?   -- ")
+					.append(lColumnMeta.getType().toString())
+					.append("\r\n");
+		}
+		lSB.append(";");
+		return lSB.toString();
+	}
+
+	@FXML
+	private void handleCreateSelectWithPrimaryKeys()
+	{
+		try
+		{
+			this.callTableMetaDataAction(this::createSelectWithPrimaryKeys);
+		}
+		catch (Throwable pThrowable)
+		{
+			pThrowable.printStackTrace(System.err);
+			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
+			lAlert.showAndWait();
+		}
+	}
+
+	private String createSelectWithPrimaryKeys(TableMetadata pTableMetadata)
+	{
+		StringBuilder lSB = new StringBuilder(this.createSelectWithPartitionKeys(pTableMetadata));
+		int lLength = lSB.length();
+		lSB.deleteCharAt(lLength - 1);
+
+		List<ColumnMetadata> lClusteringColumns = pTableMetadata.getClusteringColumns();
+		int lMaxNameLength = this.getMaxNameLength(lClusteringColumns) + 1;
+		String lNameFormat = String.format("%%%ds", lMaxNameLength);
+
+		for (ColumnMetadata bColumnMeta : lClusteringColumns)
+		{
+			String lColName = String.format(lNameFormat, bColumnMeta.getName());
+			lSB
+					.append("   AND")
+					.append(lColName)
+					.append(" > ?   -- ")
+					.append(bColumnMeta.getType().toString())
+					.append("\r\n");
+		}
+		lSB.append(";");
+		return lSB.toString();
 	}
 }
