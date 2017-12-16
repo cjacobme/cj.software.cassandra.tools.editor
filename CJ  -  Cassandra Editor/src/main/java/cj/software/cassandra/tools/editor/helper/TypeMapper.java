@@ -2,6 +2,9 @@ package cj.software.cassandra.tools.editor.helper;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.DataType.Name;
@@ -12,6 +15,7 @@ import javafx.scene.control.TableColumn;
 public class TypeMapper
 {
 
+	@SuppressWarnings("rawtypes")
 	public static <S, T> TableColumn<S, ?> createTableColumn(Definition pDefinition)
 	{
 		TableColumn<S, ?> lResult;
@@ -41,6 +45,18 @@ public class TypeMapper
 			break;
 		case DATE:
 			lResult = new TableColumn<S, LocalDate>();
+			break;
+		case MAP:
+			lResult = new TableColumn<S, Map>();
+			break;
+		case SET:
+			lResult = new TableColumn<S, Set>();
+			break;
+		case LIST:
+			lResult = new TableColumn<S, List>();
+			break;
+		case BOOLEAN:
+			lResult = new TableColumn<S, Boolean>();
 			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
@@ -79,6 +95,18 @@ public class TypeMapper
 			break;
 		case DATE:
 			lResult = pRow.get(pIndex, LocalDate.class);
+			break;
+		case MAP:
+			lResult = pRow.get(pIndex, Map.class);
+			break;
+		case SET:
+			lResult = pRow.get(pIndex, Set.class);
+			break;
+		case LIST:
+			lResult = pRow.get(pIndex, List.class);
+			break;
+		case BOOLEAN:
+			lResult = pRow.getBool(pIndex);
 			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
