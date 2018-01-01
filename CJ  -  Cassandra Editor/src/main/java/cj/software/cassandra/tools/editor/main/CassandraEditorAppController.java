@@ -37,6 +37,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -55,6 +56,8 @@ import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -813,5 +816,27 @@ public class CassandraEditorAppController
 	{
 		String lCqlQuery = pUserType.asCQLQuery();
 		this.command.setText(lCqlQuery);
+	}
+
+	@FXML
+	private void copyTableCellContent(Event pEvent)
+	{
+		try
+		{
+			Object lSelectedItem = this.results.getSelectionModel().getSelectedItem();
+			if (lSelectedItem != null)
+			{
+				ClipboardContent lClipboardContent = new ClipboardContent();
+				lClipboardContent.putString(lSelectedItem.toString());
+				Clipboard lClipboard = Clipboard.getSystemClipboard();
+				lClipboard.setContent(lClipboardContent);
+			}
+		}
+		catch (Throwable pThrowable)
+		{
+			pThrowable.printStackTrace(System.err);
+			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
+			lAlert.showAndWait();
+		}
 	}
 }
