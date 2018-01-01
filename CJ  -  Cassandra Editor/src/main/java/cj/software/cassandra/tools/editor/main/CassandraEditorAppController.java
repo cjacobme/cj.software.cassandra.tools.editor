@@ -23,6 +23,7 @@ import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.UserType;
 import com.datastax.driver.extras.codecs.jdk8.InstantCodec;
 import com.datastax.driver.extras.codecs.jdk8.LocalDateCodec;
+import com.sun.javafx.collections.ObservableListWrapper;
 
 import cj.software.cassandra.tools.editor.connection.ConnectionDialogController;
 import cj.software.cassandra.tools.editor.connection.KeyspacesSelectDialogController;
@@ -37,7 +38,6 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -53,6 +53,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellDataFeatures;
+import javafx.scene.control.TablePosition;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.Tooltip;
@@ -68,6 +69,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
+@SuppressWarnings("restriction")
 public class CassandraEditorAppController
 {
 	private CassandraEditorApp main;
@@ -818,16 +820,28 @@ public class CassandraEditorAppController
 		this.command.setText(lCqlQuery);
 	}
 
+	@SuppressWarnings("restriction")
 	@FXML
-	private void copyTableCellContent(Event pEvent)
+	private void copyTableCellContent()
 	{
 		try
 		{
 			Object lSelectedItem = this.results.getSelectionModel().getSelectedItem();
 			if (lSelectedItem != null)
 			{
+				TablePosition<?, ?> lFocusedCell = this.results.getFocusModel().getFocusedCell();
 				ClipboardContent lClipboardContent = new ClipboardContent();
-				lClipboardContent.putString(lSelectedItem.toString());
+				if (lSelectedItem instanceof ObservableListWrapper<?> && lFocusedCell != null)
+				{
+					ObservableListWrapper<?> lObservableListWrapper = (ObservableListWrapper<?>) lSelectedItem;
+					int lColumn = lFocusedCell.getColumn();
+					Object lObject = lObservableListWrapper.get(lColumn);
+					lClipboardContent.putString(lObject.toString());
+				}
+				else
+				{
+					lClipboardContent.putString(lSelectedItem.toString());
+				}
 				Clipboard lClipboard = Clipboard.getSystemClipboard();
 				lClipboard.setContent(lClipboardContent);
 			}
