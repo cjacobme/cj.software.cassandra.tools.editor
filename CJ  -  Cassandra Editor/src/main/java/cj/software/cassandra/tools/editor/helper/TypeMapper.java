@@ -7,8 +7,10 @@ import java.util.Map;
 import java.util.Set;
 
 import com.datastax.driver.core.ColumnDefinitions.Definition;
+import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.DataType.Name;
 import com.datastax.driver.core.Row;
+import com.datastax.driver.core.UDTValue;
 
 import javafx.scene.control.TableColumn;
 
@@ -106,19 +108,53 @@ public class TypeMapper
 			lResult = pRow.get(pIndex, LocalDate.class);
 			break;
 		case MAP:
-			lResult = pRow.get(pIndex, Map.class);
+			List<DataType> lMapTypeArguments = pDefinition.getType().getTypeArguments();
+			DataType lKeyType = lMapTypeArguments.get(0);
+			Class<?> lKeyClass = TypeMapper.classFor(lKeyType);
+			DataType lValuesType = lMapTypeArguments.get(1);
+			Class<?> lValuesClass = TypeMapper.classFor(lValuesType);
+			lResult = pRow.getMap(pIndex, lKeyClass, lValuesClass);
 			break;
 		case SET:
-			lResult = pRow.get(pIndex, Set.class);
+			List<DataType> lSetTypeArguments = pDefinition.getType().getTypeArguments();
+			DataType lSetType = lSetTypeArguments.get(0);
+			Class<?> lSetClass = TypeMapper.classFor(lSetType);
+			lResult = pRow.getSet(pIndex, lSetClass);
 			break;
 		case LIST:
-			lResult = pRow.get(pIndex, List.class);
+			List<DataType> lListTypeArguments = pDefinition.getType().getTypeArguments();
+			DataType lListType = lListTypeArguments.get(0);
+			Class<?> lListClass = TypeMapper.classFor(lListType);
+			lResult = pRow.getList(pIndex, lListClass);
 			break;
 		case BOOLEAN:
 			lResult = pRow.getBool(pIndex);
 			break;
 		case INT:
 			lResult = pRow.getInt(pIndex);
+			break;
+		default:
+			throw new UnsupportedOperationException("not yet implemented: " + lName);
+		}
+		return lResult;
+	}
+
+	private static Class<?> classFor(DataType pDataType)
+	{
+		Name lName = pDataType.getName();
+		Class<?> lResult;
+		switch (lName)
+		{
+		case ASCII:
+		case VARCHAR:
+		case TEXT:
+			lResult = String.class;
+			break;
+		case BIGINT:
+			lResult = Long.class;
+			break;
+		case UDT:
+			lResult = UDTValue.class;
 			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
