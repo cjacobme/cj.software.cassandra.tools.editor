@@ -6,6 +6,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
@@ -32,6 +33,8 @@ public class CassandraEditorApp
 	{
 		this.primaryStage = pPrimaryStage;
 		this.primaryStage.setTitle(INITIAL_TITLE);
+		Image lAppIcon = new Image(this.getClass().getResourceAsStream("AppLogo.png"));
+		this.primaryStage.getIcons().add(lAppIcon);
 		this.primaryStage.setOnCloseRequest(e ->
 		{
 			Platform.exit();
