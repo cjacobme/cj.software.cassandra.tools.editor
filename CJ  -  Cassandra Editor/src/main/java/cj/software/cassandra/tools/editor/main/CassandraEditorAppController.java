@@ -133,6 +133,7 @@ public class CassandraEditorAppController
 			}
 			this.listOfTables.disableProperty().bind(this.sessionProperty.isNull());
 			this.listOfMaterializedViews.disableProperty().bind(this.sessionProperty.isNull());
+			this.listOfUDTs.disableProperty().bind(this.sessionProperty.isNull());
 		}
 		catch (Throwable pThrowable)
 		{
@@ -792,5 +793,25 @@ public class CassandraEditorAppController
 		}
 		lSB.append(";");
 		return lSB.toString();
+	}
+
+	@FXML
+	private void showTypeDescription()
+	{
+		String lTypeName = this.listOfUDTs.getSelectionModel().getSelectedItem();
+		if (lTypeName != null)
+		{
+			Session lSession = this.getSession();
+			Metadata lMetadata = lSession.getCluster().getMetadata();
+			KeyspaceMetadata lKeyspaceMeta = lMetadata.getKeyspace(lSession.getLoggedKeyspace());
+			UserType lUserType = lKeyspaceMeta.getUserType(lTypeName);
+			this.describeUserType(lUserType);
+		}
+	}
+
+	private void describeUserType(UserType pUserType)
+	{
+		String lCqlQuery = pUserType.asCQLQuery();
+		this.command.setText(lCqlQuery);
 	}
 }
