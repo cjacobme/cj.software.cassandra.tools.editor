@@ -39,12 +39,15 @@ public class TypeMapper
 			break;
 		case FLOAT:
 			lResult = new TableColumn<S, Float>();
+			lResult.setStyle("-fx-alignment: CENTER-RIGHT;-fx-font-family: \"Courier New\";");
 			break;
 		case SMALLINT:
 			lResult = new TableColumn<S, Short>();
+			lResult.setStyle("-fx-alignment: CENTER-RIGHT;-fx-font-family: \"Courier New\";");
 			break;
 		case DATE:
 			lResult = new TableColumn<S, LocalDate>();
+			lResult.setStyle("-fx-font-family: \"Courier New\";");
 			break;
 		case MAP:
 			lResult = new TableColumn<S, Map>();
@@ -57,6 +60,10 @@ public class TypeMapper
 			break;
 		case BOOLEAN:
 			lResult = new TableColumn<S, Boolean>();
+			break;
+		case INT:
+			lResult = new TableColumn<S, Integer>();
+			lResult.setStyle("-fx-alignment: CENTER-RIGHT;-fx-font-family: \"Courier New\";");
 			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
@@ -107,6 +114,9 @@ public class TypeMapper
 			break;
 		case BOOLEAN:
 			lResult = pRow.getBool(pIndex);
+			break;
+		case INT:
+			lResult = pRow.getInt(pIndex);
 			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
