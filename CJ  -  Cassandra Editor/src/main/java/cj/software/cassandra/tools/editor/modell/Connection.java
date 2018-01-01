@@ -56,7 +56,7 @@ public class Connection
 		{
 			this.keyspaces.remove(lIndexOf);
 		}
-		this.keyspaces.add(0, pKeyspace);
+		this.keyspaces.add(pKeyspace);
 	}
 
 	@Override
