@@ -14,6 +14,8 @@ import javafx.scene.control.TableColumn;
 
 public class TypeMapper
 {
+	private static final String FIXED_FONT = "-fx-font-family: \"Courier New\";";
+	private static final String FIXED_FONT_RIGHT = "-fx-alignment: CENTER-RIGHT;-fx-font-family: \"Courier New\";";
 
 	@SuppressWarnings("rawtypes")
 	public static <S, T> TableColumn<S, ?> createTableColumn(Definition pDefinition)
@@ -24,11 +26,11 @@ public class TypeMapper
 		{
 		case DOUBLE:
 			lResult = new TableColumn<S, Double>();
-			lResult.setStyle("-fx-alignment: CENTER-RIGHT;-fx-font-family: \"Courier New\";");
+			lResult.setStyle(FIXED_FONT_RIGHT);
 			break;
 		case TIMESTAMP:
 			lResult = new TableColumn<S, Instant>();
-			lResult.setStyle("-fx-font-family: \"Courier New\";");
+			lResult.setStyle(FIXED_FONT);
 			break;
 		case VARCHAR:
 		case TEXT:
@@ -39,15 +41,15 @@ public class TypeMapper
 			break;
 		case FLOAT:
 			lResult = new TableColumn<S, Float>();
-			lResult.setStyle("-fx-alignment: CENTER-RIGHT;-fx-font-family: \"Courier New\";");
+			lResult.setStyle(FIXED_FONT_RIGHT);
 			break;
 		case SMALLINT:
 			lResult = new TableColumn<S, Short>();
-			lResult.setStyle("-fx-alignment: CENTER-RIGHT;-fx-font-family: \"Courier New\";");
+			lResult.setStyle(FIXED_FONT_RIGHT);
 			break;
 		case DATE:
 			lResult = new TableColumn<S, LocalDate>();
-			lResult.setStyle("-fx-font-family: \"Courier New\";");
+			lResult.setStyle(FIXED_FONT);
 			break;
 		case MAP:
 			lResult = new TableColumn<S, Map>();
@@ -63,7 +65,7 @@ public class TypeMapper
 			break;
 		case INT:
 			lResult = new TableColumn<S, Integer>();
-			lResult.setStyle("-fx-alignment: CENTER-RIGHT;-fx-font-family: \"Courier New\";");
+			lResult.setStyle(FIXED_FONT_RIGHT);
 			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
