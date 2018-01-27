@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.DataType;
@@ -67,6 +68,10 @@ public class TypeMapper
 			break;
 		case INT:
 			lResult = new TableColumn<S, Integer>();
+			lResult.setStyle(FIXED_FONT_RIGHT);
+			break;
+		case TIMEUUID:
+			lResult = new TableColumn<S, UUID>();
 			lResult.setStyle(FIXED_FONT_RIGHT);
 			break;
 		default:
@@ -132,6 +137,9 @@ public class TypeMapper
 			break;
 		case INT:
 			lResult = pRow.getInt(pIndex);
+			break;
+		case TIMEUUID:
+			lResult = pRow.get(pIndex, UUID.class);
 			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
