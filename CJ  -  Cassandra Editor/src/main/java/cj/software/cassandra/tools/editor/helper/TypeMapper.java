@@ -39,9 +39,6 @@ public class TypeMapper
 		case TEXT:
 			lResult = new TableColumn<S, String>();
 			break;
-		case UUID:
-			lResult = new TableColumn<S, String>();
-			break;
 		case FLOAT:
 			lResult = new TableColumn<S, Float>();
 			lResult.setStyle(FIXED_FONT_RIGHT);
@@ -71,8 +68,12 @@ public class TypeMapper
 			lResult.setStyle(FIXED_FONT_RIGHT);
 			break;
 		case TIMEUUID:
+		case UUID:
 			lResult = new TableColumn<S, UUID>();
 			lResult.setStyle(FIXED_FONT_RIGHT);
+			break;
+		case UDT:
+			lResult = new TableColumn<S, Object>();
 			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
@@ -97,9 +98,6 @@ public class TypeMapper
 		case VARCHAR:
 		case TEXT:
 			lResult = pRow.getString(pIndex);
-			break;
-		case UUID:
-			lResult = pRow.getUUID(pIndex);
 			break;
 		case FLOAT:
 			float lFloatValue = pRow.getFloat(pIndex);
@@ -139,7 +137,11 @@ public class TypeMapper
 			lResult = pRow.getInt(pIndex);
 			break;
 		case TIMEUUID:
+		case UUID:
 			lResult = pRow.get(pIndex, UUID.class);
+			break;
+		case UDT:
+			lResult = pRow.getObject(pIndex);
 			break;
 		default:
 			throw new UnsupportedOperationException("not yet implemented: " + lName);
