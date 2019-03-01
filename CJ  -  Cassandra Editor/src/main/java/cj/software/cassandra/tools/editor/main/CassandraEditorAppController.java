@@ -14,6 +14,7 @@ import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.ColumnMetadata;
 import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.FunctionMetadata;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.MaterializedViewMetadata;
 import com.datastax.driver.core.Metadata;
@@ -112,6 +113,9 @@ public class CassandraEditorAppController
 	@FXML
 	private ListView<String> listOfUDTs;
 
+	@FXML
+	private ListView<String> listOfFunctions;
+
 	void setMain(CassandraEditorApp pMain)
 	{
 		this.main = pMain;
@@ -139,6 +143,7 @@ public class CassandraEditorAppController
 			this.listOfTables.disableProperty().bind(this.sessionProperty.isNull());
 			this.listOfMaterializedViews.disableProperty().bind(this.sessionProperty.isNull());
 			this.listOfUDTs.disableProperty().bind(this.sessionProperty.isNull());
+			this.listOfFunctions.disableProperty().bind(this.sessionProperty.isNull());
 		}
 		catch (Throwable pThrowable)
 		{
@@ -321,12 +326,14 @@ public class CassandraEditorAppController
 		this.listOfMaterializedViews.getItems().clear();
 		this.listOfTables.getItems().clear();
 		this.listOfUDTs.getItems().clear();
+		this.listOfFunctions.getItems().clear();
 
 		if (pSession != null)
 		{
 			Metadata lMetadata = pSession.getCluster().getMetadata();
 			KeyspaceMetadata lKeyspaceMeta = lMetadata.getKeyspace(pSession.getLoggedKeyspace());
 			this.insertTableNames(lKeyspaceMeta);
+			this.insertFunctionNames(lKeyspaceMeta);
 			this.insertMaterializedViews(lKeyspaceMeta);
 			this.insertUDTs(lKeyspaceMeta);
 		}
@@ -343,6 +350,19 @@ public class CassandraEditorAppController
 		}
 		Collections.sort(lNames);
 		this.listOfTables.getItems().addAll(lNames);
+	}
+
+	private void insertFunctionNames(KeyspaceMetadata pMeta)
+	{
+		Collection<FunctionMetadata> lFunctions = pMeta.getFunctions();
+		List<String> lNames = new ArrayList<>();
+		for (FunctionMetadata bFunctionMeta : lFunctions)
+		{
+			String lName = bFunctionMeta.getSignature();
+			lNames.add(lName);
+		}
+		Collections.sort(lNames);
+		this.listOfFunctions.getItems().addAll(lNames);
 	}
 
 	private void insertMaterializedViews(KeyspaceMetadata pMeta)
