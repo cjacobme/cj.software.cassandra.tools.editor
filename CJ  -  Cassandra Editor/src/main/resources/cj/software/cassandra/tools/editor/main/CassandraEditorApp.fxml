@@ -139,7 +139,7 @@
                            <contextMenu>
                               <ContextMenu>
                                 <items>
-                                  <MenuItem mnemonicParsing="false" onAction="#showTypeDescription" text="Description" />
+                                  <MenuItem mnemonicParsing="false" onAction="#handleFunctionDDL" text="DDL" />
                                 </items>
                               </ContextMenu>
                            </contextMenu></ListView>

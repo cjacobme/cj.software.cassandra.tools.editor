@@ -596,6 +596,29 @@ public class CassandraEditorAppController
 		}
 	}
 
+	private void callFunctionMetaDataAction(Function<FunctionMetadata, String> pFunction)
+	{
+		String lSelectedFunctionName = this.listOfFunctions.getSelectionModel().getSelectedItem();
+		if (lSelectedFunctionName != null)
+		{
+			Session lSession = this.getSession();
+			Metadata lMetadata = lSession.getCluster().getMetadata();
+			KeyspaceMetadata lKeyspaceMetadata = lMetadata.getKeyspace(
+					lSession.getLoggedKeyspace());
+			Collection<FunctionMetadata> lFunctions = lKeyspaceMetadata.getFunctions();
+			for (FunctionMetadata bFM : lFunctions)
+			{
+				String lSignature = bFM.getSignature();
+				if (lSignature.equals(lSelectedFunctionName))
+				{
+					String lStatement = pFunction.apply(bFM);
+					this.command.setText(lStatement);
+					this.command.requestFocus();
+				}
+			}
+		}
+	}
+
 	@FXML
 	private void handleCreateInsertStmt()
 	{
@@ -709,6 +732,27 @@ public class CassandraEditorAppController
 	{
 		String lDDL = pTableMetadata.asCQLQuery();
 		return lDDL;
+	}
+
+	@FXML
+	private void handleFunctionDDL()
+	{
+		try
+		{
+			this.callFunctionMetaDataAction(this::functionDdl);
+		}
+		catch (Throwable pThrowable)
+		{
+			pThrowable.printStackTrace(System.err);
+			Alert lAlert = ThrowableStackTraceAlertFactory.createAlert(pThrowable);
+			lAlert.showAndWait();
+		}
+	}
+
+	private String functionDdl(FunctionMetadata pFunctionMetaData)
+	{
+		String lAsCQLQuery = pFunctionMetaData.asCQLQuery();
+		return lAsCQLQuery;
 	}
 
 	@FXML
