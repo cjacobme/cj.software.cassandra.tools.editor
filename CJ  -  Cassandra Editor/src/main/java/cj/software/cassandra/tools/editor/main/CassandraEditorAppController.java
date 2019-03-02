@@ -884,7 +884,6 @@ public class CassandraEditorAppController
 		this.command.setText(lCqlQuery);
 	}
 
-	@SuppressWarnings("restriction")
 	@FXML
 	private void copyTableCellContent()
 	{
